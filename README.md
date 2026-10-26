@@ -58,10 +58,41 @@ On top of that:
 * **Ambient light** — two large blurred colour blobs sit behind the UI
   (`Modifier.blur(90.dp)`, Android 12+; a plain gradient below that) so the glass has
   something to refract.
-* **Motion** — tab switches cross-fade with a 0.985 → 1.0 scale, pushed screens slide in on a
-  spring, the viewer zooms open from 0.94, and grid items animate their placement.
+* **Motion** — see [Motion](#motion): the app zooms out of its icon and back into it, screens
+  settle on springs, the tab capsule glides, and grid items animate their placement.
 * **Readability first** — a soft scrim sits under every floating bar so text and icons stay
   crisp over busy photos.
+
+## Motion
+
+Every animation is spring- or ease-driven, short, and runs on the render thread — nothing
+bounces more than a few percent and no animation blocks input.
+
+**App open.** The launcher shows the adaptive icon (Android 12+ splash). The flower mark then
+blooms in the same place, and when it finishes the gallery grows *out of* it: the content
+springs from `0.90 → 1.0` scale while fading in over 320 ms. On Android 14+ the window itself
+gets the same treatment through `overrideActivityTransition` (`res/anim/app_open_enter.xml`).
+
+**App close.** Back at the top level runs the reverse: content shrinks to `0.90` and fades over
+~240 ms, then the window finishes with `app_close_exit.xml` (scale `1.0 → 0.90`, fade), so the
+app folds back towards its icon instead of vanishing.
+
+**Screens.** A pushed screen settles forward — fade, `0.965 → 1.0` scale, and a 1/16 slide on a
+0.9-damped spring — while the old one drifts back (fade, `1.0 → 1.015`). Popping mirrors it
+exactly, so going back feels like the same movement reversed.
+
+**Tabs.** Cross-fade with a `0.99 → 1.0` scale, 220 ms in / 140 ms out.
+
+**Bottom bar.** The blue translucent capsule glides between tabs on
+`spring(dampingRatio = 0.88, stiffness = 520)` — about 300 ms with a whisper of overshoot — and
+the icon and label tints cross-fade over 260 ms so the active indicator stays in step with the
+capsule. The bar fades and slides when selection mode or a pushed screen hides it.
+
+**Cost.** Only `graphicsLayer` scale/alpha and layout offsets animate, so frames are handled by
+RenderThread: no per-frame recomposition, no bitmap work, no blur in the hot path. Durations
+stay in the 140–340 ms range with no chained delays.
+
+---
 
 ## Animated app icon
 
@@ -72,7 +103,7 @@ actually be seen — the moment the app opens:
 2. The mark settles from 0.86 → 1.0 scale on a slow ease-out.
 3. A specular highlight sweeps diagonally across the glass.
 4. "iOS Gallery · Photos, privately" rises in.
-5. Everything fades into the gallery.
+5. Everything fades into the gallery, which zooms in from the mark (see [Motion](#motion)).
 
 It is drawn entirely in Compose (`FlowerMark` + `LaunchAnimation`), needs no assets, and
 respects the light/dark theme. The launcher icon itself is an adaptive icon with a monochrome
@@ -87,13 +118,13 @@ layer for Android 13 themed icons.
 for the current file).
 
 ```bash
-adb install iOS-Gallery-1.1.apk
+adb install iOS-Gallery-1.2.apk
 ```
 
 Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
 
 * Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
-* `v1.1` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
+* `v1.2` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
   dex ~40 MB of libraries in one go, which exceeded the per-command time limit of the build
   machine used here; the app itself is identical. Build `assembleRelease` locally for a
   non-debuggable APK.

@@ -1,9 +1,12 @@
 package com.hubclub.iosgallery.ui
 
+import androidx.compose.animation.animateColorAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
@@ -277,8 +280,8 @@ fun GalleryBottomBar(
             val capsuleOffset by animateDpAsState(
                 targetValue = tabWidth * selectedIndex,
                 animationSpec = spring(
-                    dampingRatio = 0.74f,
-                    stiffness = Spring.StiffnessLow
+                    dampingRatio = 0.88f,
+                    stiffness = 520f
                 ),
                 label = "capsule"
             )
@@ -322,12 +325,20 @@ fun GalleryBottomBar(
                     Row(modifier = Modifier.fillMaxSize()) {
                         tabs.forEach { tab ->
                             val selected = tab == current
-                            val tint = if (selected) palette.accent else palette.secondaryText
+                            val tint by animateColorAsState(
+                                targetValue = if (selected) palette.accent
+                                else palette.secondaryText,
+                                animationSpec = tween(
+                                    durationMillis = 260,
+                                    easing = FastOutSlowInEasing
+                                ),
+                                label = "tabTint"
+                            )
                             val iconScale by animateFloatAsState(
                                 targetValue = if (selected) 1.06f else 1f,
                                 animationSpec = spring(
-                                    dampingRatio = 0.6f,
-                                    stiffness = Spring.StiffnessMedium
+                                    dampingRatio = 0.72f,
+                                    stiffness = Spring.StiffnessMediumLow
                                 ),
                                 label = "tabIcon"
                             )

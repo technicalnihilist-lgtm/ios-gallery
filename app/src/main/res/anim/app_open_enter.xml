@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- App open: the window grows out of the icon's position with a soft fade. -->
+<set xmlns:android="http://schemas.android.com/apk/res/android"
+    android:interpolator="@android:interpolator/decelerate_cubic">
+    <alpha
+        android:duration="260"
+        android:fromAlpha="0.0"
+        android:toAlpha="1.0" />
+    <scale
+        android:duration="340"
+        android:fromXScale="0.90"
+        android:fromYScale="0.90"
+        android:pivotX="50%"
+        android:pivotY="42%"
+        android:toXScale="1.0"
+        android:toYScale="1.0" />
+</set>

@@ -1,6 +1,7 @@
 package com.hubclub.iosgallery
 
 import android.app.Activity
+import android.os.Build
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
@@ -10,6 +11,8 @@ import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
 import androidx.compose.animation.core.spring
 import androidx.compose.animation.core.tween
@@ -18,7 +21,9 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
 import androidx.compose.animation.slideInHorizontally
+import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
@@ -43,6 +48,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -52,6 +58,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.text.font.FontWeight
@@ -85,6 +92,7 @@ import com.hubclub.iosgallery.util.hasMediaPermission
 import com.hubclub.iosgallery.util.openAppSettings
 import com.hubclub.iosgallery.util.requiredMediaPermissions
 import com.hubclub.iosgallery.util.shouldExplainAgain
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -92,6 +100,19 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.UPSIDE_DOWN_CAKE) {
+            // iOS-style zoom: the window grows out of the icon and shrinks back into it.
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_OPEN,
+                R.anim.app_open_enter,
+                R.anim.app_open_exit
+            )
+            overrideActivityTransition(
+                OVERRIDE_TRANSITION_CLOSE,
+                R.anim.app_close_enter,
+                R.anim.app_close_exit
+            )
+        }
         setContent {
             IOSGalleryTheme {
                 Surface(
@@ -133,6 +154,11 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
     var viewer by remember { mutableStateOf<ViewerRequest?>(null) }
     var librarySelection by remember { mutableStateOf(false) }
     var showLaunch by rememberSaveable { mutableStateOf(true) }
+    var closing by remember { mutableStateOf(false) }
+
+    // The content starts small and transparent, then grows out of the launch mark.
+    val contentScale = remember { Animatable(0.90f) }
+    val contentAlpha = remember { Animatable(0f) }
 
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
@@ -171,9 +197,66 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
         screen = Screen.Tabs
     }
 
+    BackHandler(enabled = viewer == null && screen == Screen.Tabs && !closing) {
+        closing = true
+    }
+
+    // Opening: once the icon has bloomed, the gallery zooms and fades in.
+    LaunchedEffect(showLaunch) {
+        if (!showLaunch) {
+            coroutineScope {
+                launch {
+                    contentScale.animateTo(
+                        targetValue = 1f,
+                        animationSpec = spring(
+                            dampingRatio = 0.88f,
+                            stiffness = Spring.StiffnessMediumLow
+                        )
+                    )
+                }
+                launch {
+                    contentAlpha.animateTo(
+                        targetValue = 1f,
+                        animationSpec = tween(durationMillis = 320, easing = FastOutSlowInEasing)
+                    )
+                }
+            }
+        }
+    }
+
+    // Closing: shrink back towards the icon, then hand over to the system transition.
+    LaunchedEffect(closing) {
+        if (closing) {
+            coroutineScope {
+                launch {
+                    contentScale.animateTo(
+                        targetValue = 0.90f,
+                        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing)
+                    )
+                }
+                launch {
+                    contentAlpha.animateTo(
+                        targetValue = 0f,
+                        animationSpec = tween(durationMillis = 200)
+                    )
+                }
+            }
+            activity?.finish()
+        }
+    }
+
     val deviceAlbums = remember(items) { vm.deviceAlbums(items) }
 
     Box(modifier = Modifier.fillMaxSize().background(palette.background)) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer {
+                    scaleX = contentScale.value
+                    scaleY = contentScale.value
+                    alpha = contentAlpha.value
+                }
+        ) {
         if (!granted) {
             PermissionGate(
                 asked = asked,
@@ -185,17 +268,32 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
             AnimatedContent(
                 targetState = screen,
                 transitionSpec = {
-                    if (targetState is Screen.Tabs) {
-                        (slideInHorizontally { -it / 8 } + fadeIn(tween(220))) togetherWith
-                            (slideOutHorizontally { it / 6 } + fadeOut(tween(160)))
-                    } else {
-                        (slideInHorizontally(
+                    if (targetState !is Screen.Tabs) {
+                        // push: the new screen settles forward, the old one drifts back
+                        (fadeIn(tween(240)) + scaleIn(
+                            initialScale = 0.965f,
                             animationSpec = spring(
-                                dampingRatio = 0.86f,
+                                dampingRatio = 0.9f,
                                 stiffness = Spring.StiffnessMediumLow
                             )
-                        ) { it } + fadeIn(tween(200))) togetherWith
-                            (slideOutHorizontally { -it / 8 } + fadeOut(tween(160)))
+                        ) + slideInHorizontally { it / 16 }) togetherWith
+                            (fadeOut(tween(150)) + scaleOut(
+                                targetScale = 1.015f,
+                                animationSpec = tween(200)
+                            ))
+                    } else {
+                        // pop: mirrored, so going back feels like the same movement reversed
+                        (fadeIn(tween(220)) + scaleIn(
+                            initialScale = 1.02f,
+                            animationSpec = spring(
+                                dampingRatio = 0.9f,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        )) togetherWith
+                            (fadeOut(tween(180)) + scaleOut(
+                                targetScale = 0.97f,
+                                animationSpec = tween(220)
+                            ))
                     }
                 },
                 label = "screen"
@@ -204,13 +302,16 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                     Screen.Tabs -> AnimatedContent(
                         targetState = tab,
                         transitionSpec = {
-                            (fadeIn(tween(240)) + scaleIn(
-                                initialScale = 0.985f,
-                                animationSpec = tween(260)
+                            (fadeIn(tween(220)) + scaleIn(
+                                initialScale = 0.99f,
+                                animationSpec = tween(
+                                    durationMillis = 260,
+                                    easing = FastOutSlowInEasing
+                                )
                             )) togetherWith
-                                (fadeOut(tween(150)) + scaleOut(
-                                    targetScale = 1.01f,
-                                    animationSpec = tween(150)
+                                (fadeOut(tween(140)) + scaleOut(
+                                    targetScale = 1.005f,
+                                    animationSpec = tween(140)
                                 ))
                         },
                         label = "tab"
@@ -325,11 +426,15 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                 }
             }
 
-            if (screen == Screen.Tabs && !librarySelection && viewer == null) {
+            AnimatedVisibility(
+                visible = screen == Screen.Tabs && !librarySelection && viewer == null,
+                enter = fadeIn(tween(200)) + slideInVertically(tween(240)) { it / 4 },
+                exit = fadeOut(tween(140)) + slideOutVertically(tween(170)) { it / 4 },
+                modifier = Modifier.align(Alignment.BottomCenter)
+            ) {
                 GalleryBottomBar(
                     current = tab,
-                    onSelect = { tab = it },
-                    modifier = Modifier.align(Alignment.BottomCenter)
+                    onSelect = { tab = it }
                 )
             }
 
@@ -369,6 +474,8 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                     onMessage = message
                 )
             }
+        }
+
         }
 
         // ---- animated app icon on launch --------------------------------------

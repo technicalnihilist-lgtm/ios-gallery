@@ -1,0 +1,5 @@
+v1.4
+• Fixed the blank flash and dimmed frame when opening a photo
+• Fixed swiping staying locked after zooming
+• New photo viewer chrome: light glass top bar, dark glass action bar
+• The gallery now visibly grows out of the app icon on launch

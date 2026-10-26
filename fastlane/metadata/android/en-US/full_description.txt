@@ -1,0 +1,22 @@
+iOS Gallery is a simple, private, fully offline photo and video gallery for Android, inspired by the organisation and visual style of Apple's Photos app on iOS and macOS.
+
+Your media never leaves your phone. There is no account, no ads, no trackers and no cloud sync — the app does not even request the INTERNET permission, so it cannot send anything anywhere. It reads the photos and videos already on your device through MediaStore and presents them in a clean Liquid Glass interface.
+
+Features
+• Timeline of every photo and video, grouped by Today, Yesterday and date
+• Every device folder appears automatically as an album, with cover and count
+• Create, rename and delete your own albums; add or remove photos without touching the originals
+• Full-screen viewer with pinch-to-zoom, double-tap zoom, swipe navigation and a details sheet
+• Share, copy, move, rename and delete through Android's own media APIs
+• Built-in video playback with native controls
+• Offline search by file name and album name
+• Favourites
+• Recently Deleted with restore and permanent delete (30-day purge)
+
+Design
+Translucent glass panels with hairline highlights, specular sheen and soft depth, a floating tab bar whose capsule glides between tabs on a spring, and an app icon that blooms into the gallery on launch. Light and dark themes follow the system.
+
+Privacy
+No internet permission, no analytics, no advertising, no accounts, no backups. All processing happens on the device.
+
+iOS Gallery is an independent project and is not affiliated with Apple Inc.

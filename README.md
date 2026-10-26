@@ -33,20 +33,20 @@ photos in them.
 
 ## Install
 
-The ready-to-install APK is in [`apk/`](apk):
-
-```
-apk/iOS-Gallery-1.0.apk
-```
-
-* Signed with the standard Android **debug key** (APK Signature Scheme v2, zip-aligned).
-  It installs on any device with Android 7.0+ — sideloading requires "install unknown apps".
-* It is a *release* build (`debuggable=false`), just signed with a development certificate.
-  For Play Store distribution, sign it with your own keystore (see below).
+**[Download the APK](https://github.com/technicalnihilist-lgtm/ios-gallery/releases/download/v1.0/iOS-Gallery-1.0.apk)**
+— 9 MB, Android 7.0+ (the [v1.0 release](https://github.com/technicalnihilist-lgtm/ios-gallery/releases/tag/v1.0) page has it too).
 
 ```bash
-adb install apk/iOS-Gallery-1.0.apk
+adb install iOS-Gallery-1.0.apk
 ```
+
+Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
+
+* Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
+* It is a *release* build (`debuggable=false`), just signed with a development certificate.
+  For Play Store distribution, sign it with your own keystore (see below).
+* The APK is not committed to the repository — it lives on the release page, which keeps
+  clone sizes small.
 
 ---
 

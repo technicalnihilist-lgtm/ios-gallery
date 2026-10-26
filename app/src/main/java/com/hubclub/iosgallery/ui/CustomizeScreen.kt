@@ -1,5 +1,8 @@
 package com.hubclub.iosgallery.ui
 
+import androidx.compose.animation.animateContentSize
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -43,6 +46,7 @@ fun CustomizeScreen(
     onDockScale: (Float) -> Unit,
     onGlassOpacity: (Float) -> Unit,
     onThemeMode: (String) -> Unit,
+    onGridColumns: (Int) -> Unit,
     onReset: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -50,16 +54,23 @@ fun CustomizeScreen(
 
     Column(modifier = Modifier.fillMaxSize().background(palette.background)) {
         DetailTopBar(title = "Customize", onBack = onBack) {
-            Text(
-                text = "Reset",
-                color = palette.accent,
-                fontSize = 14.sp,
-                fontWeight = FontWeight.Medium,
+            // .glassEffect(.regular.tint(.blue.opacity(0.4)).interactive(), in: .capsule)
+            GlassPanel(
                 modifier = Modifier
-                    .clip(RoundedCornerShape(10.dp))
-                    .glassClickable(pressedScale = 0.92f, onClick = onReset)
-                    .padding(horizontal = 10.dp, vertical = 6.dp)
-            )
+                    .padding(end = 4.dp)
+                    .glassClickable(pressedScale = 0.92f, onClick = onReset),
+                shape = RoundedCornerShape(50),
+                elevation = 8.dp,
+                tint = palette.accent.copy(alpha = 0.30f),
+                contentPadding = PaddingValues(horizontal = 14.dp, vertical = 7.dp)
+            ) {
+                Text(
+                    text = "Reset",
+                    color = palette.accent,
+                    fontSize = 13.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+            }
         }
 
         Column(
@@ -84,7 +95,14 @@ fun CustomizeScreen(
                 contentPadding = PaddingValues(vertical = 22.dp)
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .animateContentSize(
+                            animationSpec = spring(
+                                dampingRatio = 0.82f,
+                                stiffness = Spring.StiffnessMediumLow
+                            )
+                        ),
                     contentAlignment = Alignment.Center
                 ) {
                     DockPill(
@@ -134,6 +152,27 @@ fun CustomizeScreen(
                 ) {
                     Text("Clear", color = palette.tertiaryText, fontSize = 11.sp)
                     Text("Solid", color = palette.tertiaryText, fontSize = 11.sp)
+                }
+            }
+
+            // ---- grid columns -------------------------------------------------
+            SettingsCard(
+                title = "Grid columns",
+                value = "${settings.gridColumns} per row",
+                hint = "How many thumbnails fit across the library."
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    (2..5).forEach { count ->
+                        ThemeChip(
+                            label = "$count",
+                            selected = settings.gridColumns == count,
+                            modifier = Modifier.weight(1f),
+                            onClick = { onGridColumns(count) }
+                        )
+                    }
                 }
             }
 

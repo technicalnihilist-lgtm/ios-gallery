@@ -30,6 +30,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
@@ -49,6 +50,7 @@ import com.hubclub.iosgallery.model.MediaItem
 import com.hubclub.iosgallery.ui.theme.GalleryTheme
 import com.hubclub.iosgallery.util.formatNumber
 import com.hubclub.iosgallery.util.groupByDate
+import com.hubclub.iosgallery.util.groupByPattern
 
 @Composable
 fun LibraryScreen(
@@ -74,6 +76,10 @@ fun LibraryScreen(
     var showNewAlbum by remember { mutableStateOf(false) }
     var pendingAlbumName by remember { mutableStateOf("") }
     var showAbout by remember { mutableStateOf(false) }
+    // Years / Months / All, like the iOS Photos library switch
+    var mode by rememberSaveable { mutableStateOf(2) }
+    var favoritesOnly by rememberSaveable { mutableStateOf(false) }
+    var newestFirst by rememberSaveable { mutableStateOf(true) }
 
     val trash = rememberTrashFlow(vm, onMessage)
 
@@ -91,9 +97,20 @@ fun LibraryScreen(
 
     BackHandler(enabled = selectionMode) { exitSelection() }
 
-    val groups = remember(items) { groupByDate(items) }
+    val visible = remember(items, favoritesOnly, newestFirst) {
+        val base = if (favoritesOnly) items.filter { it.id in favorites } else items
+        if (newestFirst) base else base.reversed()
+    }
+    val groups = remember(visible, mode) {
+        when (mode) {
+            0 -> groupByPattern(visible, "yyyy")
+            1 -> groupByPattern(visible, "MMMM yyyy")
+            else -> groupByDate(visible)
+        }
+    }
     val videoCount = remember(items) { items.count { it.isVideo } }
     val selectedItems = remember(selectedIds, items) { items.filter { it.id in selectedIds } }
+    val gridColumns = if (mode == 0) 5 else if (mode == 1) 4 else LocalGridColumns.current
 
     Box(modifier = Modifier.fillMaxSize().background(palette.background)) {
     Column(modifier = Modifier.fillMaxSize()) {
@@ -128,21 +145,24 @@ fun LibraryScreen(
                     title = "No photos or videos",
                     message = "Anything you capture or copy to this device will appear here automatically."
                 )
-                else -> MediaGrid(
+                else -> androidx.compose.runtime.CompositionLocalProvider(
+                    LocalGridColumns provides gridColumns
+                ) {
+                MediaGrid(
                     groups = groups,
                     favorites = favorites,
                     selectionMode = selectionMode,
                     selectedIds = selectedIds,
                     contentPadding = PaddingValues(horizontal = 10.dp),
-                    bottomPadding = bottomBarHeight + 16.dp,
+                    bottomPadding = bottomBarHeight + 66.dp,
                     showHeaders = true,
                     onItemClick = { item ->
                         if (selectionMode) {
                             selectedIds = if (item.id in selectedIds) selectedIds - item.id
                             else selectedIds + item.id
                         } else {
-                            val index = items.indexOfFirst { it.id == item.id }
-                            onOpenViewer(items, if (index >= 0) index else 0)
+                            val index = visible.indexOfFirst { it.id == item.id }
+                            onOpenViewer(visible, if (index >= 0) index else 0)
                         }
                     },
                     onItemLongClick = { item ->
@@ -154,7 +174,22 @@ fun LibraryScreen(
                         }
                     }
                 )
+                }
             }
+        }
+    }
+
+    if (!selectionMode) {
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = bottomBarHeight + 4.dp)
+        ) {
+            GlassSegmented(
+                options = listOf("Years", "Months", "All"),
+                selectedIndex = mode,
+                onSelect = { mode = it }
+            )
         }
     }
 
@@ -226,6 +261,14 @@ fun LibraryScreen(
         visible = showMenu,
         title = "iOS Gallery",
         actions = listOf(
+            SheetAction(
+                if (favoritesOnly) "Show all photos" else "Show favorites only",
+                GalleryIcons.Heart
+            ) { favoritesOnly = !favoritesOnly },
+            SheetAction(
+                if (newestFirst) "Sort: oldest first" else "Sort: newest first",
+                GalleryIcons.Restore
+            ) { newestFirst = !newestFirst },
             SheetAction("Customize appearance", GalleryIcons.Grid) { onOpenCustomize() },
             SheetAction("Recently Deleted", GalleryIcons.Trash) { onOpenTrash() },
             SheetAction("Refresh library", GalleryIcons.Restore) {

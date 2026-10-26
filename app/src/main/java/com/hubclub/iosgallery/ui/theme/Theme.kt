@@ -91,27 +91,29 @@ private val DarkPalette = GalleryPalette(
     isDark = true
 )
 
+// Reference recipe: linear-gradient(135deg, white .38, white .10),
+// border 1px white .48, inset 0 1px 1px white .6, shadow 0 8 24 black .13
 private val LightGlass = GlassTokens(
-    fillTop = Color(0xE0FFFFFF),
-    fillBottom = Color(0xB8FFFFFF),
-    borderTop = Color(0xFFFFFFFF),
-    borderBottom = Color(0x59FFFFFF),
-    sheen = Color(0x66FFFFFF),
-    shadow = Color(0xFF1B2333),
-    highlight = Color(0xCCFFFFFF),
+    fillTop = Color(0x61FFFFFF),
+    fillBottom = Color(0x1AFFFFFF),
+    borderTop = Color(0x7AFFFFFF),
+    borderBottom = Color(0x7AFFFFFF),
+    sheen = Color(0x1FFFFFFF),
+    shadow = Color(0xFF000000),
+    highlight = Color(0x99FFFFFF),
     tintedFill = Color(0x330A84FF),
     scrimStart = Color(0x00F4F6FB),
     scrimEnd = Color(0xE6F4F6FB)
 )
 
 private val DarkGlass = GlassTokens(
-    fillTop = Color(0xB32C2C33),
-    fillBottom = Color(0x99141418),
-    borderTop = Color(0x4DFFFFFF),
-    borderBottom = Color(0x0FFFFFFF),
-    sheen = Color(0x1FFFFFFF),
+    fillTop = Color(0x2EFFFFFF),
+    fillBottom = Color(0x0DFFFFFF),
+    borderTop = Color(0x3DFFFFFF),
+    borderBottom = Color(0x3DFFFFFF),
+    sheen = Color(0x14FFFFFF),
     shadow = Color(0xFF000000),
-    highlight = Color(0x33FFFFFF),
+    highlight = Color(0x4DFFFFFF),
     tintedFill = Color(0x334DA3FF),
     scrimStart = Color(0x000A0A0C),
     scrimEnd = Color(0xF20A0A0C)

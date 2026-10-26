@@ -72,6 +72,8 @@ class GalleryViewModel(app: Application) : AndroidViewModel(app) {
 
     fun setThemeMode(value: String) = settingsStore.setThemeMode(value)
 
+    fun setGridColumns(value: Int) = settingsStore.setGridColumns(value)
+
     fun resetSettings() = settingsStore.reset()
 
     /** Device folders, derived from the media index. */

@@ -128,7 +128,11 @@ class MainActivity : ComponentActivity() {
                     modifier = Modifier.fillMaxSize(),
                     color = GalleryTheme.palette.background
                 ) {
-                    GalleryRoot(vm = vm)
+                    androidx.compose.runtime.CompositionLocalProvider(
+                        com.hubclub.iosgallery.ui.LocalGridColumns provides settings.gridColumns
+                    ) {
+                        GalleryRoot(vm = vm)
+                    }
                 }
             }
         }
@@ -426,6 +430,7 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                         onDockScale = { vm.setDockScale(it) },
                         onGlassOpacity = { vm.setGlassOpacity(it) },
                         onThemeMode = { vm.setThemeMode(it) },
+                        onGridColumns = { vm.setGridColumns(it) },
                         onReset = { vm.resetSettings() },
                         onBack = { screen = Screen.Tabs }
                     )

@@ -106,27 +106,23 @@ fun GlassPanel(
                 elevation = elevation,
                 shape = shape,
                 clip = false,
-                ambientColor = glass.shadow.copy(alpha = 0.5f),
-                spotColor = glass.shadow.copy(alpha = 0.6f)
+                ambientColor = glass.shadow.copy(alpha = 0.13f),
+                spotColor = glass.shadow.copy(alpha = 0.13f)
             )
             .clip(shape)
-            .background(Brush.verticalGradient(listOf(glass.fillTop, glass.fillBottom)))
+            // 135deg: 38 % white at the top-left, 10 % at the bottom-right
+            .background(Brush.linearGradient(listOf(glass.fillTop, glass.fillBottom)))
             .then(if (tint != null) Modifier.background(tint) else Modifier)
-            .border(
-                width = 0.9.dp,
-                brush = Brush.verticalGradient(listOf(glass.borderTop, glass.borderBottom)),
-                shape = shape
-            )
+            .border(width = 1.dp, color = glass.borderTop, shape = shape)
     ) {
-        // specular sheen across the top-left corner
+        // inset 0 1px 1px rgba(255,255,255,.6) — bright lip along the top edge
         Box(
             modifier = Modifier
                 .matchParentSize()
                 .background(
-                    Brush.linearGradient(
-                        0f to glass.sheen,
-                        0.55f to Color.Transparent,
-                        1f to Color.Transparent
+                    Brush.verticalGradient(
+                        0f to glass.highlight,
+                        0.06f to Color.Transparent
                     )
                 )
         )

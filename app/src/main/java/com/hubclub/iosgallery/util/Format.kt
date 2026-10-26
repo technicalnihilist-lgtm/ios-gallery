@@ -41,6 +41,17 @@ private fun startOfDay(millis: Long): Long {
     return cal.timeInMillis
 }
 
+/** Groups items by an arbitrary SimpleDateFormat pattern, e.g. "yyyy" or "MMMM yyyy". */
+fun groupByPattern(items: List<MediaItem>, pattern: String): List<DateGroup> {
+    if (items.isEmpty()) return emptyList()
+    val format = SimpleDateFormat(pattern, Locale.getDefault())
+    val groups = LinkedHashMap<String, MutableList<MediaItem>>()
+    for (item in items) {
+        groups.getOrPut(format.format(Date(item.dateMillis))) { mutableListOf() }.add(item)
+    }
+    return groups.map { (label, list) -> DateGroup(label, list) }
+}
+
 fun formatDate(millis: Long): String = dayFormat.format(Date(millis))
 
 fun formatDateTime(millis: Long): String =

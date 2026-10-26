@@ -1,0 +1,6 @@
+v1.7
+• New glass recipe: 135° gradient, hairline white border, inset highlight and a softer shadow
+• Tinted, interactive glass capsule (Reset) and a morphing glass preview card
+• Grid columns setting (2–5 per row)
+• Years / Months / All library modes with 5 / 4 / 3 columns
+• Show favorites only, and newest / oldest sorting from the library menu

@@ -42,10 +42,10 @@ Every surface is one material, built from four layers in `ui/Glass.kt`:
 
 | Layer | What it does |
 | --- | --- |
-| Translucent fill | `linear-gradient` from 88 % to 70 % white (light) or 72 % → 62 % charcoal (dark), so the photo grid stays visible through every panel |
-| Hairline border | 0.9 dp border that is bright at the top edge and fades towards the bottom — the glass "lip" |
-| Specular sheen | A diagonal white gradient across the top-left corner, like light hitting the surface |
-| Soft shadow | Low-opacity, wide drop shadow that lifts the panel off the content |
+| Fill | `linear-gradient(135°)` from 38 % to 10 % white in light mode (16 % → 5 % in dark), so the photos stay visible through every panel |
+| Border | 1 dp solid white at 48 % (22 % in dark) — the glass rim |
+| Inset highlight | A 1 dp bright lip along the top edge (`inset 0 1px 1px rgba(255,255,255,.6)`) |
+| Soft shadow | `0 8px 24px rgba(0,0,0,.13)` equivalent — wide and low, lifting the panel off the content |
 
 On top of that:
 
@@ -131,13 +131,13 @@ layer for Android 13 themed icons.
 for the current file).
 
 ```bash
-adb install iOS-Gallery-1.6.apk
+adb install iOS-Gallery-1.7.apk
 ```
 
 Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
 
 * Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
-* `v1.6` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
+* `v1.7` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
   dex ~40 MB of libraries in one go, which exceeded the per-command time limit of the build
   machine used here; the app itself is identical. Build `assembleRelease` locally for a
   non-debuggable APK.
@@ -155,6 +155,7 @@ Everything the user can change lives on one glass screen — Library header **�
 | --- | --- | --- |
 | **Dock size** | 75 % – 135 % | Scales the dock pill, tiles, gutters and icons together |
 | **Glass transparency** | 30 % – 100 % | Multiplies the alpha of every glass layer (fill, border, sheen) — lower means more of your photos shows through |
+| **Grid columns** | 2 – 5 | Thumbnails per row in the library, favourites, albums and search |
 | **Appearance** | System / Light / Dark | Overrides the system theme |
 
 Changes apply live — the screen shows a real dock preview as you drag — and are remembered across
@@ -168,6 +169,8 @@ launches in private SharedPreferences. **Reset** restores the defaults. Nothing 
 * Automatic local scan through **MediaStore** (images + videos in one timeline).
 * Evenly spaced, rounded iOS-style grid; lazy thumbnails with an in-memory + on-disk cache.
 * Grouped by date: **Today**, **Yesterday**, then `12 March 2025`.
+* **Years / Months / All** view switch in a floating glass capsule (5 / 4 / 3 columns).
+* **Favourites only** filter and **newest / oldest** sorting from the header menu.
 * Item count in the header (`1,248 photos · 36 videos`).
 * Multi-select with Share / Favorite / Add to Album / Delete.
 

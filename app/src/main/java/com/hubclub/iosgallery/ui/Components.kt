@@ -73,6 +73,77 @@ import com.hubclub.iosgallery.util.DateGroup
 import com.hubclub.iosgallery.util.formatDuration
 import com.hubclub.iosgallery.util.formatNumber
 
+/** Segmented glass capsule, like the iOS Photos Years / Months / All switch. */
+@Composable
+fun GlassSegmented(
+    options: List<String>,
+    selectedIndex: Int,
+    onSelect: (Int) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val palette = GalleryTheme.palette
+    val glass = GalleryTheme.glass
+    val width = 240.dp
+    val height = 40.dp
+    val segment = width / options.size
+    val glide by animateDpAsState(
+        targetValue = segment * selectedIndex,
+        animationSpec = spring(dampingRatio = 0.86f, stiffness = 560f),
+        label = "segGlide"
+    )
+    GlassPanel(
+        modifier = modifier.width(width).height(height),
+        shape = RoundedCornerShape(height / 2),
+        elevation = 16.dp
+    ) {
+        Box(Modifier.fillMaxSize()) {
+            Box(
+                modifier = Modifier
+                    .offset(x = glide)
+                    .width(segment)
+                    .height(height)
+                    .padding(4.dp)
+                    .clip(RoundedCornerShape((height - 8.dp) / 2))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(
+                                palette.accent.copy(alpha = 0.30f),
+                                palette.accent.copy(alpha = 0.16f)
+                            )
+                        )
+                    )
+                    .border(
+                        0.8.dp,
+                        Color.White.copy(alpha = 0.45f),
+                        RoundedCornerShape((height - 8.dp) / 2)
+                    )
+            )
+            Row(Modifier.fillMaxSize()) {
+                options.forEachIndexed { index, label ->
+                    val selected = index == selectedIndex
+                    Box(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxSize()
+                            .glassClickable(pressedScale = 0.94f, onClick = { onSelect(index) }),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text(
+                            text = label,
+                            color = if (selected) palette.accent else palette.secondaryText,
+                            fontSize = 13.sp,
+                            fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+/** How many thumbnails per row; provided from the saved appearance settings. */
+val LocalGridColumns = androidx.compose.runtime.compositionLocalOf { 3 }
+
 enum class GalleryTab(val label: String, val icon: ImageVector) {
     Library("Library", GalleryIcons.Library),
     Albums("Albums", GalleryIcons.Albums),
@@ -131,6 +202,11 @@ fun LargeTitleBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
+            .background(
+                Brush.verticalGradient(
+                    listOf(palette.background.copy(alpha = 0.55f), Color.Transparent)
+                )
+            )
             .statusBarsPadding()
             .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp)
     ) {
@@ -310,28 +386,21 @@ fun DockPill(
                 spotColor = Color.Black.copy(alpha = 0.4f)
             )
             .clip(RoundedCornerShape(pillRadius))
-            .background(
-                Brush.verticalGradient(
-                    listOf(
-                        glass.fillTop.copy(alpha = 0.72f),
-                        glass.fillBottom.copy(alpha = 0.60f)
-                    )
-                )
-            )
+            .background(Brush.linearGradient(listOf(glass.fillTop, glass.fillBottom)))
             .border(
-                width = 0.9.dp,
-                brush = Brush.verticalGradient(listOf(glass.borderTop, glass.borderBottom)),
+                width = 1.dp,
+                color = glass.borderTop,
                 shape = RoundedCornerShape(pillRadius)
             )
     ) {
-        // specular sheen across the glass
+        // bright lip along the top edge of the pill
         Box(
             Modifier
                 .matchParentSize()
                 .background(
-                    Brush.linearGradient(
-                        0f to glass.sheen.copy(alpha = 0.55f),
-                        0.6f to Color.Transparent
+                    Brush.verticalGradient(
+                        0f to glass.highlight,
+                        0.05f to Color.Transparent
                     )
                 )
         )
@@ -577,8 +646,9 @@ fun MediaGrid(
     onItemLongClick: (MediaItem) -> Unit
 ) {
     val palette = GalleryTheme.palette
+    val columns = LocalGridColumns.current
     LazyVerticalGrid(
-        columns = GridCells.Adaptive(minSize = 110.dp),
+        columns = GridCells.Fixed(columns),
         contentPadding = contentPadding,
         horizontalArrangement = Arrangement.spacedBy(3.dp),
         verticalArrangement = Arrangement.spacedBy(3.dp),

@@ -87,10 +87,13 @@ tab you moved towards (`width / 7` on a 0.92-damped spring) while the outgoing o
 other way (`width / 11`), both cross-fading with a `0.985 → 1.0` scale. Direction is derived from
 the tab order, so moving right always feels like moving right.
 
-**Photos.** Swiping between photos slides them with a parallax: the photo you are leaving drifts
-(`0.16 × width`), shrinks to `0.95` and dims to `0.68`, while the next one settles in. The pager
-snaps one photo at a time and pre-loads the neighbours (`beyondViewportPageCount = 1`), and the
-filename plus `3 of 42` counter cross-fade upwards as you switch.
+**Photos.** Swiping between photos slides them with the pager's own spring settle, one photo at a
+time. (An earlier build also dimmed and shrank the outgoing photo; that layer forced a full-screen
+offscreen buffer and could flash the current photo, so it was removed in 1.4.)
+
+**Viewer chrome.** The photo viewer keeps its own fixed look so it reads on any image: a **light
+glass bar** at the top (filename, `3 of 42`, dark circular buttons) and a **dark glass bar** at the
+bottom (Share / Favorite / Details / Delete with labels), both floating over the photo.
 
 **Bottom bar.** The blue translucent capsule glides between tabs on
 `spring(dampingRatio = 0.88, stiffness = 520)` — about 300 ms with a whisper of overshoot — and
@@ -127,13 +130,13 @@ layer for Android 13 themed icons.
 for the current file).
 
 ```bash
-adb install iOS-Gallery-1.3.apk
+adb install iOS-Gallery-1.4.apk
 ```
 
 Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
 
 * Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
-* `v1.3` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
+* `v1.4` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
   dex ~40 MB of libraries in one go, which exceeded the per-command time limit of the build
   machine used here; the app itself is identical. Build `assembleRelease` locally for a
   non-debuggable APK.
@@ -307,6 +310,24 @@ app/src/main/java/com/hubclub/iosgallery/
   every glyph shares the 1.7 dp stroke weight.
 * The app icon is an original multicoloured flower / aperture mark, generated as an adaptive
   icon with a monochrome layer plus legacy raster fallbacks.
+
+## Fixed in 1.4
+
+* **Blank flash when opening a photo.** The viewer overlay wrote snapshot state during
+  composition (`lastRequest = request`), so the first frame composed with no request and the photo
+  appeared one frame late. It now reads `request ?: lastRequest` and keeps the last value through a
+  `SideEffect`.
+* **Photo could open dimmed / shifted.** The per-page parallax layer scaled, translated and
+  dimmed the current photo whenever the pager's `currentPage` and the composed page disagreed for
+  a frame. Removed.
+* **Swiping could stop working after zooming.** The `zoomed` flag was never cleared on a page
+  change, leaving `userScrollEnabled = false`. It is now reset by
+  `LaunchedEffect(pagerState.currentPage)`.
+* **Gallery could stay invisible.** The whole app sat inside a permanent scaled/alpha layer, which
+  also breaks `SurfaceView` (video). The layer now exists only while the open/close animation
+  runs, and a 2.6 s watchdog forces the content visible if the launch animation never finishes.
+* **The open zoom happened behind an opaque overlay**, so it was never actually visible. The launch
+  mark now hands over *while* it dissolves, so the gallery visibly grows out of the icon.
 
 ## Known limitations
 

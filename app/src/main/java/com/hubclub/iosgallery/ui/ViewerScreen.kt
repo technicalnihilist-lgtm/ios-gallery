@@ -1,5 +1,7 @@
 package com.hubclub.iosgallery.ui
 
+import androidx.compose.ui.draw.shadow
+import androidx.compose.foundation.border
 import androidx.compose.animation.togetherWith
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
@@ -14,8 +16,6 @@ import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
-import androidx.compose.animation.slideInVertically
-import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -36,8 +36,6 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
-import androidx.compose.foundation.pager.PagerDefaults
-import androidx.compose.foundation.pager.PagerSnapDistance
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -89,7 +87,6 @@ import com.hubclub.iosgallery.util.formatDateTime
 import com.hubclub.iosgallery.util.formatDuration
 import com.hubclub.iosgallery.util.formatResolution
 import com.hubclub.iosgallery.util.formatSize
-import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 data class ViewerRequest(val items: List<MediaItem>, val index: Int)
@@ -117,6 +114,8 @@ fun ViewerScreen(
     ) { request.items.size }
 
     var zoomed by remember { mutableStateOf(false) }
+    // A stale zoom flag used to leave the pager scroll-locked after a page change.
+    LaunchedEffect(pagerState.currentPage) { zoomed = false }
     var chromeVisible by remember { mutableStateOf(true) }
     var showInfo by remember { mutableStateOf(false) }
     var showMenu by remember { mutableStateOf(false) }
@@ -200,29 +199,12 @@ fun ViewerScreen(
         HorizontalPager(
             state = pagerState,
             userScrollEnabled = !zoomed,
-            beyondViewportPageCount = 1,
-            flingBehavior = PagerDefaults.flingBehavior(
-                state = pagerState,
-                pagerSnapDistance = PagerSnapDistance.atMost(1)
-            ),
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val item = request.items[page]
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .graphicsLayer {
-                        // The photo you are leaving drifts, shrinks a touch and dims,
-                        // so switching between photos reads as one fluid slide.
-                        val pageOffset = (pagerState.currentPage - page) +
-                            pagerState.currentPageOffsetFraction
-                        val distance = abs(pageOffset).coerceIn(0f, 1f)
-                        alpha = 1f - 0.32f * distance
-                        translationX = size.width * pageOffset * 0.16f
-                        val shrink = 1f - 0.05f * distance
-                        scaleX = shrink
-                        scaleY = shrink
-                    }
                     .pointerInput(item.id) {
                         detectTapGestures(onTap = { chromeVisible = !chromeVisible })
                     },
@@ -239,124 +221,141 @@ fun ViewerScreen(
             }
         }
 
-        // ---- top chrome ------------------------------------------------------
+        // ---- top chrome: light glass bar, dark glass circles -----------------
         AnimatedVisibility(
             visible = chromeVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(tween(180)),
+            exit = fadeOut(tween(160)),
             modifier = Modifier.align(Alignment.TopCenter)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(palette.background.copy(alpha = 0.55f), Color.Transparent)
-                        )
-                    )
                     .statusBarsPadding()
-                    .padding(horizontal = 12.dp, vertical = 8.dp)
+                    .padding(horizontal = 13.dp, vertical = 8.dp)
             ) {
-                GlassPanel(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(22.dp),
-                    elevation = 18.dp,
-                    contentPadding = PaddingValues(
-                        start = 6.dp, end = 8.dp, top = 6.dp, bottom = 6.dp
-                    )
-                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp),
+                        .height(62.dp)
+                        .shadow(
+                            elevation = 18.dp,
+                            shape = RoundedCornerShape(30.dp),
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.30f),
+                            spotColor = Color.Black.copy(alpha = 0.35f)
+                        )
+                        .clip(RoundedCornerShape(30.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(0xFFF8F8FB).copy(alpha = 0.95f),
+                                    Color(0xFFE8E8EE).copy(alpha = 0.88f)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 1.dp,
+                            brush = Brush.verticalGradient(
+                                listOf(Color.White, Color.White.copy(alpha = 0.55f))
+                            ),
+                            shape = RoundedCornerShape(30.dp)
+                        )
+                        .padding(horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    CircleIconButton(
+                    ViewerCircleButton(
                         icon = GalleryIcons.Back,
                         contentDescription = "Close",
-                        onClick = onClose,
-                        tint = palette.primaryText,
-                        size = 38.dp
+                        onClick = onClose
                     )
-                    AnimatedContent(
-                        targetState = pagerState.currentPage,
-                        transitionSpec = {
-                            (fadeIn(tween(180)) + slideInVertically { it / 4 }) togetherWith
-                                (fadeOut(tween(120)) + slideOutVertically { -it / 4 })
-                        },
-                        label = "photoTitle",
+                    Column(
                         modifier = Modifier
                             .weight(1f)
-                            .padding(horizontal = 4.dp)
-                    ) { page ->
-                        val shown = request.items.getOrNull(page) ?: current
-                        Column {
-                            Text(
-                                text = shown.name,
-                                color = palette.primaryText,
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.SemiBold,
-                                maxLines = 1,
-                                overflow = TextOverflow.Ellipsis
-                            )
-                            Text(
-                                text = if (request.items.size > 1)
-                                    "${page + 1} of ${request.items.size}"
-                                else if (shown.isVideo) "Video" else "Photo",
-                                color = palette.secondaryText,
-                                fontSize = 11.sp
-                            )
-                        }
+                            .padding(horizontal = 10.dp)
+                    ) {
+                        Text(
+                            text = current.name,
+                            color = Color(0xFF111114),
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            letterSpacing = (-0.2).sp,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Text(
+                            text = if (request.items.size > 1)
+                                "${pagerState.currentPage + 1} of ${request.items.size}"
+                            else if (current.isVideo) "Video" else "Photo",
+                            color = Color(0xFF8A8A90),
+                            fontSize = 12.sp
+                        )
                     }
-                    CircleIconButton(
+                    ViewerCircleButton(
                         icon = if (isFavorite) GalleryIcons.HeartFilled else GalleryIcons.Heart,
                         contentDescription = "Favorite",
                         onClick = {
                             vm.toggleFavorite(current.id)
-                            onMessage(if (isFavorite) "Removed from Favorites" else "Added to Favorites")
+                            onMessage(
+                                if (isFavorite) "Removed from Favorites"
+                                else "Added to Favorites"
+                            )
                         },
-                        tint = if (isFavorite) palette.favorite else palette.primaryText,
-                        size = 38.dp
+                        tint = if (isFavorite) Color(0xFFFF375F) else Color.White
                     )
-                    CircleIconButton(
+                    Spacer(Modifier.width(8.dp))
+                    ViewerCircleButton(
                         icon = GalleryIcons.More,
                         contentDescription = "More",
-                        onClick = { showMenu = true },
-                        tint = palette.primaryText,
-                        size = 38.dp
+                        onClick = { showMenu = true }
                     )
-                }
                 }
             }
         }
 
-        // ---- bottom chrome ---------------------------------------------------
+        // ---- bottom chrome: dark glass action bar ----------------------------
         AnimatedVisibility(
             visible = chromeVisible,
-            enter = fadeIn(),
-            exit = fadeOut(),
+            enter = fadeIn(tween(180)),
+            exit = fadeOut(tween(160)),
             modifier = Modifier.align(Alignment.BottomCenter)
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(Color.Transparent, palette.background.copy(alpha = 0.7f))
-                        )
-                    )
                     .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+                    .padding(horizontal = 17.dp, vertical = 10.dp)
             ) {
-                GlassPanel(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(26.dp),
-                    elevation = 24.dp
-                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(70.dp),
+                        .height(74.dp)
+                        .shadow(
+                            elevation = 22.dp,
+                            shape = RoundedCornerShape(28.dp),
+                            clip = false,
+                            ambientColor = Color.Black.copy(alpha = 0.45f),
+                            spotColor = Color.Black.copy(alpha = 0.5f)
+                        )
+                        .clip(RoundedCornerShape(28.dp))
+                        .background(
+                            Brush.verticalGradient(
+                                listOf(
+                                    Color(0xFF3B3B42).copy(alpha = 0.92f),
+                                    Color(0xFF15151A).copy(alpha = 0.95f)
+                                )
+                            )
+                        )
+                        .border(
+                            width = 1.dp,
+                            brush = Brush.verticalGradient(
+                                listOf(
+                                    Color.White.copy(alpha = 0.32f),
+                                    Color.White.copy(alpha = 0.06f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(28.dp)
+                        ),
                     horizontalArrangement = Arrangement.SpaceEvenly,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -364,9 +363,9 @@ fun ViewerScreen(
                         context.startActivity(FileOps.shareIntent(listOf(current)))
                     }
                     ViewerAction(
-                        if (isFavorite) GalleryIcons.HeartFilled else GalleryIcons.Heart,
-                        if (isFavorite) "Favorited" else "Favorite",
-                        tint = if (isFavorite) palette.favorite else null
+                        icon = if (isFavorite) GalleryIcons.HeartFilled else GalleryIcons.Heart,
+                        label = if (isFavorite) "Favorited" else "Favorite",
+                        tint = if (isFavorite) Color(0xFFFF375F) else null
                     ) {
                         vm.toggleFavorite(current.id)
                     }
@@ -375,7 +374,6 @@ fun ViewerScreen(
                         trash(listOf(current))
                         onClose()
                     }
-                }
                 }
             }
         }
@@ -427,6 +425,32 @@ fun ViewerScreen(
     }
 }
 
+/** Dark translucent circle used on the light viewer bar. */
+@Composable
+private fun ViewerCircleButton(
+    icon: ImageVector,
+    contentDescription: String,
+    onClick: () -> Unit,
+    tint: Color = Color.White
+) {
+    Box(
+        modifier = Modifier
+            .size(38.dp)
+            .clip(CircleShape)
+            .background(Color(0xFF4A4A52).copy(alpha = 0.55f))
+            .border(0.8.dp, Color.White.copy(alpha = 0.28f), CircleShape)
+            .glassClickable(pressedScale = 0.9f, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = contentDescription,
+            tint = tint,
+            modifier = Modifier.size(17.dp)
+        )
+    }
+}
+
 @Composable
 private fun ViewerAction(
     icon: ImageVector,
@@ -438,8 +462,8 @@ private fun ViewerAction(
     val palette = GalleryTheme.palette
     val color = when {
         tint != null -> tint
-        destructive -> Color(0xFFFF3B30)
-        else -> palette.primaryText
+        destructive -> Color(0xFFFF453A)
+        else -> Color.White
     }
     Column(
         modifier = Modifier

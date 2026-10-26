@@ -48,6 +48,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -93,6 +94,7 @@ import com.hubclub.iosgallery.util.openAppSettings
 import com.hubclub.iosgallery.util.requiredMediaPermissions
 import com.hubclub.iosgallery.util.shouldExplainAgain
 import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.io.File
 
@@ -155,6 +157,9 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
     var librarySelection by remember { mutableStateOf(false) }
     var showLaunch by rememberSaveable { mutableStateOf(true) }
     var closing by remember { mutableStateOf(false) }
+    // The content only carries a graphics layer while it is actually animating: a
+    // permanent layer costs a full-screen buffer and breaks SurfaceView (video).
+    var animating by remember { mutableStateOf(true) }
 
     // The content starts small and transparent, then grows out of the launch mark.
     val contentScale = remember { Animatable(0.90f) }
@@ -221,12 +226,26 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                     )
                 }
             }
+            animating = false
+        }
+    }
+
+    // Safety net: whatever happens to the launch mark (animation turned off in system
+    // settings, an early config change, the overlay being skipped), the gallery must
+    // never be left invisible.
+    LaunchedEffect(Unit) {
+        delay(2600)
+        if (contentAlpha.value < 1f && !closing) {
+            contentScale.snapTo(1f)
+            contentAlpha.snapTo(1f)
+            animating = false
         }
     }
 
     // Closing: shrink back towards the icon, then hand over to the system transition.
     LaunchedEffect(closing) {
         if (closing) {
+            animating = true
             coroutineScope {
                 launch {
                     contentScale.animateTo(
@@ -251,11 +270,17 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .graphicsLayer {
-                    scaleX = contentScale.value
-                    scaleY = contentScale.value
-                    alpha = contentAlpha.value
-                }
+                .then(
+                    if (animating) {
+                        Modifier.graphicsLayer {
+                            scaleX = contentScale.value
+                            scaleY = contentScale.value
+                            alpha = contentAlpha.value
+                        }
+                    } else {
+                        Modifier
+                    }
+                )
         ) {
         if (!granted) {
             PermissionGate(
@@ -470,7 +495,9 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
         // ---- full-screen viewer, with a soft glass zoom transition -------------
         val request = viewer
         var lastRequest by remember { mutableStateOf<ViewerRequest?>(null) }
-        if (request != null) lastRequest = request
+        // SideEffect (not an assignment in the composition body) so the first frame
+        // already composes the viewer instead of flashing an empty overlay.
+        SideEffect { if (request != null) lastRequest = request }
         AnimatedVisibility(
             visible = request != null,
             enter = fadeIn(tween(180)) + scaleIn(
@@ -479,7 +506,7 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
             ),
             exit = fadeOut(tween(160)) + scaleOut(targetScale = 0.96f, animationSpec = tween(160))
         ) {
-            lastRequest?.let { safe ->
+            (request ?: lastRequest)?.let { safe ->
                 ViewerScreen(
                     request = safe,
                     favorites = meta.favorites,

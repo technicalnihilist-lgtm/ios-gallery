@@ -357,9 +357,11 @@ fun LaunchAnimation(onFinished: () -> Unit) {
         sweep.animateTo(1.6f, tween(620, easing = FastOutSlowInEasing))
         wordAlpha.animateTo(1f, tween(360))
         wordOffset.animateTo(0f, tween(460, easing = FastOutSlowInEasing))
-        delay(420)
-        fade.animateTo(0f, tween(340))
+        delay(160)
+        // Hand over while the mark dissolves, so the gallery is visibly growing out
+        // of the icon instead of appearing behind an opaque overlay.
         onFinished()
+        fade.animateTo(0f, tween(300))
     }
 
     Box(

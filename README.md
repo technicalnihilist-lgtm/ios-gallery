@@ -18,15 +18,15 @@ through, bright hairline edges, specular sheen, soft depth and spring-driven mot
 
 | Library (light) | Library (dark) | Albums |
 | --- | --- | --- |
-| ![Library light](docs/screenshots/01-library-light.png) | ![Library dark](docs/screenshots/02-library-dark.png) | ![Albums](docs/screenshots/03-albums.png) |
+| ![Library light](https://raw.githubusercontent.com/technicalnihilist-lgtm/ios-gallery/main/docs/screenshots/01-library-light.png) | ![Library dark](https://raw.githubusercontent.com/technicalnihilist-lgtm/ios-gallery/main/docs/screenshots/02-library-dark.png) | ![Albums](https://raw.githubusercontent.com/technicalnihilist-lgtm/ios-gallery/main/docs/screenshots/03-albums.png) |
 
 | Search | Photo viewer | Selection mode |
 | --- | --- | --- |
-| ![Search](docs/screenshots/04-search.png) | ![Viewer](docs/screenshots/05-viewer.png) | ![Selection](docs/screenshots/06-selection.png) |
+| ![Search](https://raw.githubusercontent.com/technicalnihilist-lgtm/ios-gallery/main/docs/screenshots/04-search.png) | ![Viewer](https://raw.githubusercontent.com/technicalnihilist-lgtm/ios-gallery/main/docs/screenshots/05-viewer.png) | ![Selection](https://raw.githubusercontent.com/technicalnihilist-lgtm/ios-gallery/main/docs/screenshots/06-selection.png) |
 
 | Launch animation |
 | --- |
-| ![Launch](docs/screenshots/07-launch-animation.png) |
+| ![Launch](https://raw.githubusercontent.com/technicalnihilist-lgtm/ios-gallery/main/docs/screenshots/07-launch-animation.png) |
 
 **About these images:** they are *design previews*, rendered from the same layout, spacing,
 colour, glass and type tokens the Compose UI uses. The build machine for this project has no

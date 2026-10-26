@@ -1,0 +1,3 @@
+v1.5
+• New iPhone-style dock: floating glass bar with rounded-square tiles for Library, Albums, Favorites and Search
+• The active tile lifts and a highlight glides between tiles on a spring

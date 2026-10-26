@@ -1,5 +1,6 @@
 package com.hubclub.iosgallery.ui
 
+import androidx.compose.ui.draw.shadow
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.Spring
@@ -244,10 +245,12 @@ fun SectionTitle(text: String, trailing: String? = null) {
     }
 }
 
-// -------------------------------------------------------------- bottom bar
+// -------------------------------------------------------------- bottom dock
 
 /**
- * Floating glass tab bar with a capsule that glides between tabs on a spring.
+ * iOS-style dock: a floating glass bar with rounded-square tiles, one per
+ * section. No labels (like the iPhone dock) — the icons carry the meaning and
+ * the active tile is lifted, brightened and marked by a gliding highlight.
  */
 @Composable
 fun GalleryBottomBar(
@@ -255,126 +258,166 @@ fun GalleryBottomBar(
     onSelect: (GalleryTab) -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val palette = GalleryTheme.palette
     val glass = GalleryTheme.glass
     val tabs = GalleryTab.entries
     val selectedIndex = tabs.indexOf(current)
 
+    val tile = 56.dp
+    val gap = 10.dp
+    val inset = 12.dp
+    val dockWidth = tile * tabs.size + gap * (tabs.size - 1) + inset * 2
+    val step = tile + gap
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .background(
-                Brush.verticalGradient(
-                    listOf(glass.scrimStart, glass.scrimEnd)
-                )
-            )
+            .background(Brush.verticalGradient(listOf(glass.scrimStart, glass.scrimEnd)))
             .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        BoxWithConstraints(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 16.dp)
-                .padding(top = 18.dp, bottom = 10.dp)
+                .padding(top = 18.dp, bottom = 12.dp),
+            contentAlignment = Alignment.Center
         ) {
-            val tabWidth = maxWidth / tabs.size
-            val capsuleOffset by animateDpAsState(
-                targetValue = tabWidth * selectedIndex,
-                animationSpec = spring(
-                    dampingRatio = 0.88f,
-                    stiffness = 520f
-                ),
-                label = "capsule"
-            )
-            GlassPanel(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(28.dp),
-                elevation = 26.dp
+            Box(
+                modifier = Modifier
+                    .width(dockWidth)
+                    .height(tile + inset * 2)
+                    .shadow(
+                        elevation = 24.dp,
+                        shape = RoundedCornerShape(30.dp),
+                        clip = false,
+                        ambientColor = Color.Black.copy(alpha = 0.35f),
+                        spotColor = Color.Black.copy(alpha = 0.4f)
+                    )
+                    .clip(RoundedCornerShape(30.dp))
+                    .background(
+                        Brush.verticalGradient(
+                            listOf(glass.fillTop.copy(alpha = 0.72f), glass.fillBottom.copy(alpha = 0.60f))
+                        )
+                    )
+                    .border(
+                        width = 0.9.dp,
+                        brush = Brush.verticalGradient(
+                            listOf(glass.borderTop, glass.borderBottom)
+                        ),
+                        shape = RoundedCornerShape(30.dp)
+                    )
             ) {
+                // specular sheen across the glass
+                Box(
+                    Modifier
+                        .matchParentSize()
+                        .background(
+                            Brush.linearGradient(
+                                0f to glass.sheen.copy(alpha = 0.55f),
+                                0.6f to Color.Transparent
+                            )
+                        )
+                )
+                // the highlight glides between tiles on a fluid spring
+                val glide by animateDpAsState(
+                    targetValue = inset + step * selectedIndex,
+                    animationSpec = spring(dampingRatio = 0.88f, stiffness = 520f),
+                    label = "dockGlide"
+                )
                 Box(
                     modifier = Modifier
-                        .fillMaxWidth()
-                        .height(62.dp)
+                        .offset(x = glide, y = inset)
+                        .size(tile)
+                        .clip(RoundedCornerShape(17.dp))
+                        .background(Color.White.copy(alpha = 0.16f))
+                )
+                Row(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .padding(horizontal = inset, vertical = inset),
+                    horizontalArrangement = Arrangement.spacedBy(gap),
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // the gliding selection capsule
-                    Box(
-                        modifier = Modifier
-                            .offset(x = capsuleOffset)
-                            .width(tabWidth)
-                            .height(62.dp)
-                            .padding(6.dp)
-                            .clip(RoundedCornerShape(22.dp))
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(
-                                        palette.accent.copy(alpha = 0.26f),
-                                        palette.accent.copy(alpha = 0.12f)
-                                    )
-                                )
-                            )
-                            .border(
-                                width = 0.9.dp,
-                                brush = Brush.verticalGradient(
-                                    listOf(
-                                        Color.White.copy(alpha = 0.55f),
-                                        Color.White.copy(alpha = 0.10f)
-                                    )
-                                ),
-                                shape = RoundedCornerShape(22.dp)
-                            )
-                    )
-                    Row(modifier = Modifier.fillMaxSize()) {
-                        tabs.forEach { tab ->
-                            val selected = tab == current
-                            val tint by animateColorAsState(
-                                targetValue = if (selected) palette.accent
-                                else palette.secondaryText,
-                                animationSpec = tween(
-                                    durationMillis = 260,
-                                    easing = FastOutSlowInEasing
-                                ),
-                                label = "tabTint"
-                            )
-                            val iconScale by animateFloatAsState(
-                                targetValue = if (selected) 1.06f else 1f,
-                                animationSpec = spring(
-                                    dampingRatio = 0.72f,
-                                    stiffness = Spring.StiffnessMediumLow
-                                ),
-                                label = "tabIcon"
-                            )
-                            Column(
-                                modifier = Modifier
-                                    .weight(1f)
-                                    .fillMaxSize()
-                                    .glassClickable(pressedScale = 0.92f, onClick = { onSelect(tab) }),
-                                horizontalAlignment = Alignment.CenterHorizontally,
-                                verticalArrangement = Arrangement.Center
-                            ) {
-                                Icon(
-                                    imageVector = tab.icon,
-                                    contentDescription = tab.label,
-                                    tint = tint,
-                                    modifier = Modifier
-                                        .size(22.dp)
-                                        .graphicsLayer {
-                                            scaleX = iconScale
-                                            scaleY = iconScale
-                                        }
-                                )
-                                Spacer(Modifier.height(3.dp))
-                                Text(
-                                    text = tab.label,
-                                    color = tint,
-                                    fontSize = 9.5.sp,
-                                    fontWeight = if (selected) FontWeight.SemiBold
-                                    else FontWeight.Medium
-                                )
-                            }
-                        }
+                    tabs.forEach { tab ->
+                        DockTile(
+                            tab = tab,
+                            selected = tab == current,
+                            onClick = { onSelect(tab) }
+                        )
                     }
                 }
             }
         }
+    }
+}
+
+/** Two-stop gradient per section, in the spirit of iOS app icons. */
+private fun dockGradient(tab: GalleryTab): Pair<Color, Color> = when (tab) {
+    GalleryTab.Library -> Color(0xFF63B4FF) to Color(0xFF0A6BFF)
+    GalleryTab.Albums -> Color(0xFFC08CFF) to Color(0xFF7A46F0)
+    GalleryTab.Favorites -> Color(0xFFFF8BAE) to Color(0xFFFF2D55)
+    GalleryTab.Search -> Color(0xFFAEB6C6) to Color(0xFF5E6779)
+}
+
+@Composable
+private fun DockTile(
+    tab: GalleryTab,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    val (top, bottom) = dockGradient(tab)
+    val scale by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.93f,
+        animationSpec = spring(dampingRatio = 0.72f, stiffness = Spring.StiffnessMediumLow),
+        label = "dockScale"
+    )
+    val lift by animateFloatAsState(
+        targetValue = if (selected) 1f else 0.86f,
+        animationSpec = tween(durationMillis = 240, easing = FastOutSlowInEasing),
+        label = "dockLift"
+    )
+    Box(
+        modifier = Modifier
+            .size(56.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+                alpha = lift
+            }
+            .shadow(
+                elevation = if (selected) 12.dp else 6.dp,
+                shape = RoundedCornerShape(17.dp),
+                clip = false,
+                ambientColor = bottom.copy(alpha = 0.45f),
+                spotColor = bottom.copy(alpha = 0.55f)
+            )
+            .clip(RoundedCornerShape(17.dp))
+            .background(Brush.verticalGradient(listOf(top, bottom)))
+            .border(
+                width = 0.8.dp,
+                brush = Brush.verticalGradient(
+                    listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.10f))
+                ),
+                shape = RoundedCornerShape(17.dp)
+            )
+            .glassClickable(pressedScale = 0.9f, onClick = onClick),
+        contentAlignment = Alignment.Center
+    ) {
+        // glass highlight on the upper half of the tile
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.26f),
+                        0.52f to Color.Transparent
+                    )
+                )
+        )
+        Icon(
+            imageVector = tab.icon,
+            contentDescription = tab.label,
+            tint = Color.White,
+            modifier = Modifier.size(25.dp)
+        )
     }
 }
 

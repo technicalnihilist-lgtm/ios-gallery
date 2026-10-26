@@ -95,10 +95,11 @@ offscreen buffer and could flash the current photo, so it was removed in 1.4.)
 glass bar** at the top (filename, `3 of 42`, dark circular buttons) and a **dark glass bar** at the
 bottom (Share / Favorite / Details / Delete with labels), both floating over the photo.
 
-**Bottom bar.** The blue translucent capsule glides between tabs on
-`spring(dampingRatio = 0.88, stiffness = 520)` — about 300 ms with a whisper of overshoot — and
-the icon and label tints cross-fade over 260 ms so the active indicator stays in step with the
-capsule. The bar fades and slides when selection mode or a pushed screen hides it.
+**Dock.** The bottom navigation is an iPhone-style dock: a floating glass pill holding four
+rounded-square tiles (Library, Albums, Favorites, Search) with no labels. A 16 % white highlight
+glides between tiles on `spring(dampingRatio = 0.88, stiffness = 520)` — about 300 ms with a
+whisper of overshoot — while the active tile lifts to full size and brightness and the others sit
+at 93 % scale. The dock fades and slides away when selection mode or a pushed screen hides it.
 
 **Cost.** Only `graphicsLayer` scale/alpha and layout offsets animate, so frames are handled by
 RenderThread: no per-frame recomposition, no bitmap work, no blur in the hot path. Durations
@@ -130,13 +131,13 @@ layer for Android 13 themed icons.
 for the current file).
 
 ```bash
-adb install iOS-Gallery-1.4.apk
+adb install iOS-Gallery-1.5.apk
 ```
 
 Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
 
 * Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
-* `v1.4` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
+* `v1.5` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
   dex ~40 MB of libraries in one go, which exceeded the per-command time limit of the build
   machine used here; the app itself is identical. Build `assembleRelease` locally for a
   non-debuggable APK.
@@ -302,8 +303,10 @@ app/src/main/java/com/hubclub/iosgallery/
 
 * Light theme: `#F4F6FB → #E8ECF6` ambient background, glass fill `rgba(255,255,255,0.88→0.70)`,
   single accent `#0A84FF`. Dark theme: near-black `#0A0A0C`, charcoal glass, accent `#4DA3FF`.
-* The tab bar is a 62 dp glass pill with a 28 dp radius, floating 10 dp above the system
-  navigation inset; the selection capsule is 22 dp with a white hairline.
+* The dock is a 278 × 80 dp glass pill (30 dp radius) floating 12 dp above the system navigation
+  inset, holding four 56 dp tiles with a 17 dp radius and 10 dp gutters. Each section has its own
+  two-stop gradient in the spirit of iOS app icons: blue for Library, violet for Albums, pink for
+  Favorites, graphite for Search.
 * Thumbnails are 10 dp rounded tiles with a 3 dp gutter and a 0.05-alpha white wash on top, so
   the grid reads as one continuous material.
 * Icons are drawn as vector paths in code (`ui/GalleryIcons.kt`) — no icon-font dependency, and

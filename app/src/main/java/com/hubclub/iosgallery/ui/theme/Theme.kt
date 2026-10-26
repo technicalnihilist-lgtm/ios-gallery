@@ -117,6 +117,21 @@ private val DarkGlass = GlassTokens(
     scrimEnd = Color(0xF20A0A0C)
 )
 
+/** Scales the alpha of every glass layer, so the panels can be made clearer or more solid. */
+private fun GlassTokens.withOpacity(factor: Float): GlassTokens {
+    if (factor >= 0.999f) return this
+    fun Color.fade(): Color = copy(alpha = (alpha * factor).coerceIn(0f, 1f))
+    return copy(
+        fillTop = fillTop.fade(),
+        fillBottom = fillBottom.fade(),
+        borderTop = borderTop.fade(),
+        borderBottom = borderBottom.fade(),
+        sheen = sheen.fade(),
+        highlight = highlight.fade(),
+        tintedFill = tintedFill.fade()
+    )
+}
+
 val LocalGalleryPalette = staticCompositionLocalOf { LightPalette }
 val LocalGlass = staticCompositionLocalOf { LightGlass }
 
@@ -179,10 +194,11 @@ private val GalleryTypography = Typography(
 @Composable
 fun IOSGalleryTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
+    glassOpacity: Float = 1f,
     content: @Composable () -> Unit
 ) {
     val palette = if (darkTheme) DarkPalette else LightPalette
-    val glass = if (darkTheme) DarkGlass else LightGlass
+    val glass = (if (darkTheme) DarkGlass else LightGlass).withOpacity(glassOpacity)
     val scheme = if (darkTheme) {
         darkColorScheme(
             primary = palette.accent,

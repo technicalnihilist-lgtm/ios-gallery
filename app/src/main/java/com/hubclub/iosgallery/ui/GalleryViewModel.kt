@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import com.hubclub.iosgallery.data.FileOps
 import com.hubclub.iosgallery.data.MediaRepository
 import com.hubclub.iosgallery.data.MetaStore
+import com.hubclub.iosgallery.data.AppSettings
+import com.hubclub.iosgallery.data.SettingsStore
 import com.hubclub.iosgallery.model.DeviceAlbum
 import com.hubclub.iosgallery.model.ManagedAlbum
 import com.hubclub.iosgallery.model.MediaItem
@@ -26,6 +28,9 @@ class GalleryViewModel(app: Application) : AndroidViewModel(app) {
 
     private val repository = MediaRepository(app)
     private val metaStore = MetaStore(app)
+    private val settingsStore = SettingsStore(app)
+
+    val settings: StateFlow<AppSettings> = settingsStore.state
 
     val meta: StateFlow<MetaState> = metaStore.state
 
@@ -58,6 +63,16 @@ class GalleryViewModel(app: Application) : AndroidViewModel(app) {
         val expired = metaStore.state.value.trash.filter { it.deletedAt < cutoff }.map { it.id }
         if (expired.isNotEmpty()) metaStore.purgeTrash(expired)
     }
+
+    // ------------------------------------------------------------ appearance
+
+    fun setDockScale(value: Float) = settingsStore.setDockScale(value)
+
+    fun setGlassOpacity(value: Float) = settingsStore.setGlassOpacity(value)
+
+    fun setThemeMode(value: String) = settingsStore.setThemeMode(value)
+
+    fun resetSettings() = settingsStore.reset()
 
     /** Device folders, derived from the media index. */
     fun deviceAlbums(items: List<MediaItem>): List<DeviceAlbum> = repository.buildDeviceAlbums(items)

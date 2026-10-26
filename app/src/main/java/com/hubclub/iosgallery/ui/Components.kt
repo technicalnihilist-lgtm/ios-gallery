@@ -251,23 +251,16 @@ fun SectionTitle(text: String, trailing: String? = null) {
  * iOS-style dock: a floating glass bar with rounded-square tiles, one per
  * section. No labels (like the iPhone dock) — the icons carry the meaning and
  * the active tile is lifted, brightened and marked by a gliding highlight.
+ * [scale] lets the user resize it from the Customize screen.
  */
 @Composable
 fun GalleryBottomBar(
     current: GalleryTab,
     onSelect: (GalleryTab) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    scale: Float = 1f
 ) {
     val glass = GalleryTheme.glass
-    val tabs = GalleryTab.entries
-    val selectedIndex = tabs.indexOf(current)
-
-    val tile = 56.dp
-    val gap = 10.dp
-    val inset = 12.dp
-    val dockWidth = tile * tabs.size + gap * (tabs.size - 1) + inset * 2
-    val step = tile + gap
-
     Column(
         modifier = modifier
             .fillMaxWidth()
@@ -280,70 +273,97 @@ fun GalleryBottomBar(
                 .padding(top = 18.dp, bottom = 12.dp),
             contentAlignment = Alignment.Center
         ) {
-            Box(
-                modifier = Modifier
-                    .width(dockWidth)
-                    .height(tile + inset * 2)
-                    .shadow(
-                        elevation = 24.dp,
-                        shape = RoundedCornerShape(30.dp),
-                        clip = false,
-                        ambientColor = Color.Black.copy(alpha = 0.35f),
-                        spotColor = Color.Black.copy(alpha = 0.4f)
+            DockPill(current = current, onSelect = onSelect, scale = scale)
+        }
+    }
+}
+
+/** The glass pill itself, reusable so the Customize screen can preview it live. */
+@Composable
+fun DockPill(
+    current: GalleryTab,
+    onSelect: (GalleryTab) -> Unit,
+    scale: Float = 1f,
+    modifier: Modifier = Modifier
+) {
+    val glass = GalleryTheme.glass
+    val tabs = GalleryTab.entries
+    val selectedIndex = tabs.indexOf(current)
+
+    val tile = 56.dp * scale
+    val gap = 10.dp * scale
+    val inset = 12.dp * scale
+    val dockWidth = tile * tabs.size + gap * (tabs.size - 1) + inset * 2
+    val step = tile + gap
+    val pillRadius = 30.dp * scale
+    val tileRadius = 17.dp * scale
+
+    Box(
+        modifier = modifier
+            .width(dockWidth)
+            .height(tile + inset * 2)
+            .shadow(
+                elevation = 24.dp,
+                shape = RoundedCornerShape(pillRadius),
+                clip = false,
+                ambientColor = Color.Black.copy(alpha = 0.35f),
+                spotColor = Color.Black.copy(alpha = 0.4f)
+            )
+            .clip(RoundedCornerShape(pillRadius))
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        glass.fillTop.copy(alpha = 0.72f),
+                        glass.fillBottom.copy(alpha = 0.60f)
                     )
-                    .clip(RoundedCornerShape(30.dp))
-                    .background(
-                        Brush.verticalGradient(
-                            listOf(glass.fillTop.copy(alpha = 0.72f), glass.fillBottom.copy(alpha = 0.60f))
-                        )
+                )
+            )
+            .border(
+                width = 0.9.dp,
+                brush = Brush.verticalGradient(listOf(glass.borderTop, glass.borderBottom)),
+                shape = RoundedCornerShape(pillRadius)
+            )
+    ) {
+        // specular sheen across the glass
+        Box(
+            Modifier
+                .matchParentSize()
+                .background(
+                    Brush.linearGradient(
+                        0f to glass.sheen.copy(alpha = 0.55f),
+                        0.6f to Color.Transparent
                     )
-                    .border(
-                        width = 0.9.dp,
-                        brush = Brush.verticalGradient(
-                            listOf(glass.borderTop, glass.borderBottom)
-                        ),
-                        shape = RoundedCornerShape(30.dp)
-                    )
-            ) {
-                // specular sheen across the glass
-                Box(
-                    Modifier
-                        .matchParentSize()
-                        .background(
-                            Brush.linearGradient(
-                                0f to glass.sheen.copy(alpha = 0.55f),
-                                0.6f to Color.Transparent
-                            )
-                        )
                 )
-                // the highlight glides between tiles on a fluid spring
-                val glide by animateDpAsState(
-                    targetValue = inset + step * selectedIndex,
-                    animationSpec = spring(dampingRatio = 0.88f, stiffness = 520f),
-                    label = "dockGlide"
+        )
+        // the highlight glides between tiles on a fluid spring
+        val glide by animateDpAsState(
+            targetValue = inset + step * selectedIndex,
+            animationSpec = spring(dampingRatio = 0.88f, stiffness = 520f),
+            label = "dockGlide"
+        )
+        Box(
+            modifier = Modifier
+                .offset(x = glide, y = inset)
+                .size(tile)
+                .clip(RoundedCornerShape(tileRadius))
+                .background(Color.White.copy(alpha = 0.16f))
+        )
+        Row(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(horizontal = inset, vertical = inset),
+            horizontalArrangement = Arrangement.spacedBy(gap),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            tabs.forEach { tab ->
+                DockTile(
+                    tab = tab,
+                    selected = tab == current,
+                    size = tile,
+                    cornerRadius = tileRadius,
+                    iconSize = 25.dp * scale,
+                    onClick = { onSelect(tab) }
                 )
-                Box(
-                    modifier = Modifier
-                        .offset(x = glide, y = inset)
-                        .size(tile)
-                        .clip(RoundedCornerShape(17.dp))
-                        .background(Color.White.copy(alpha = 0.16f))
-                )
-                Row(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = inset, vertical = inset),
-                    horizontalArrangement = Arrangement.spacedBy(gap),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    tabs.forEach { tab ->
-                        DockTile(
-                            tab = tab,
-                            selected = tab == current,
-                            onClick = { onSelect(tab) }
-                        )
-                    }
-                }
             }
         }
     }
@@ -361,6 +381,9 @@ private fun dockGradient(tab: GalleryTab): Pair<Color, Color> = when (tab) {
 private fun DockTile(
     tab: GalleryTab,
     selected: Boolean,
+    size: Dp,
+    cornerRadius: Dp,
+    iconSize: Dp,
     onClick: () -> Unit
 ) {
     val (top, bottom) = dockGradient(tab)
@@ -376,7 +399,7 @@ private fun DockTile(
     )
     Box(
         modifier = Modifier
-            .size(56.dp)
+            .size(size)
             .graphicsLayer {
                 scaleX = scale
                 scaleY = scale
@@ -384,24 +407,23 @@ private fun DockTile(
             }
             .shadow(
                 elevation = if (selected) 12.dp else 6.dp,
-                shape = RoundedCornerShape(17.dp),
+                shape = RoundedCornerShape(cornerRadius),
                 clip = false,
                 ambientColor = bottom.copy(alpha = 0.45f),
                 spotColor = bottom.copy(alpha = 0.55f)
             )
-            .clip(RoundedCornerShape(17.dp))
+            .clip(RoundedCornerShape(cornerRadius))
             .background(Brush.verticalGradient(listOf(top, bottom)))
             .border(
                 width = 0.8.dp,
                 brush = Brush.verticalGradient(
                     listOf(Color.White.copy(alpha = 0.55f), Color.White.copy(alpha = 0.10f))
                 ),
-                shape = RoundedCornerShape(17.dp)
+                shape = RoundedCornerShape(cornerRadius)
             )
             .glassClickable(pressedScale = 0.9f, onClick = onClick),
         contentAlignment = Alignment.Center
     ) {
-        // glass highlight on the upper half of the tile
         Box(
             Modifier
                 .matchParentSize()
@@ -416,7 +438,7 @@ private fun DockTile(
             imageVector = tab.icon,
             contentDescription = tab.label,
             tint = Color.White,
-            modifier = Modifier.size(25.dp)
+            modifier = Modifier.size(iconSize)
         )
     }
 }

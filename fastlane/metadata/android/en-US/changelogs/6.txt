@@ -1,0 +1,4 @@
+v1.6
+• New Customize screen: resize the dock (75–135%) and change the glass transparency (30–100%)
+• Appearance override: System, Light or Dark
+• Live dock preview while you adjust; settings are saved on the device

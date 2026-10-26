@@ -131,18 +131,34 @@ layer for Android 13 themed icons.
 for the current file).
 
 ```bash
-adb install iOS-Gallery-1.5.apk
+adb install iOS-Gallery-1.6.apk
 ```
 
 Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
 
 * Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
-* `v1.5` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
+* `v1.6` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
   dex ~40 MB of libraries in one go, which exceeded the per-command time limit of the build
   machine used here; the app itself is identical. Build `assembleRelease` locally for a
   non-debuggable APK.
 * The APK is not committed to the repository — it lives on the release page, which keeps
   clone sizes small.
+
+---
+
+## Customize
+
+Everything the user can change lives on one glass screen — Library header **⋯** →
+**Customize appearance**:
+
+| Control | Range | What it does |
+| --- | --- | --- |
+| **Dock size** | 75 % – 135 % | Scales the dock pill, tiles, gutters and icons together |
+| **Glass transparency** | 30 % – 100 % | Multiplies the alpha of every glass layer (fill, border, sheen) — lower means more of your photos shows through |
+| **Appearance** | System / Light / Dark | Overrides the system theme |
+
+Changes apply live — the screen shows a real dock preview as you drag — and are remembered across
+launches in private SharedPreferences. **Reset** restores the defaults. Nothing leaves the device.
 
 ---
 

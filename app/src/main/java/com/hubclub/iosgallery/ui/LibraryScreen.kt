@@ -61,6 +61,7 @@ fun LibraryScreen(
     onOpenViewer: (List<MediaItem>, Int) -> Unit,
     onSelectionActive: (Boolean) -> Unit,
     onOpenTrash: () -> Unit,
+    onOpenCustomize: () -> Unit,
     onMessage: (String) -> Unit
 ) {
     val palette = GalleryTheme.palette
@@ -225,6 +226,7 @@ fun LibraryScreen(
         visible = showMenu,
         title = "iOS Gallery",
         actions = listOf(
+            SheetAction("Customize appearance", GalleryIcons.Grid) { onOpenCustomize() },
             SheetAction("Recently Deleted", GalleryIcons.Trash) { onOpenTrash() },
             SheetAction("Refresh library", GalleryIcons.Restore) {
                 vm.refresh()

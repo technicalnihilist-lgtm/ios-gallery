@@ -26,6 +26,7 @@ import androidx.compose.animation.slideOutHorizontally
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.background
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -72,6 +73,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.hubclub.iosgallery.ui.AlbumDetailScreen
 import com.hubclub.iosgallery.ui.AlbumsScreen
+import com.hubclub.iosgallery.ui.CustomizeScreen
 import com.hubclub.iosgallery.ui.EmptyState
 import com.hubclub.iosgallery.ui.FavoritesScreen
 import com.hubclub.iosgallery.ui.GalleryBottomBar
@@ -116,12 +118,17 @@ class MainActivity : ComponentActivity() {
             )
         }
         setContent {
-            IOSGalleryTheme {
+            val vm: GalleryViewModel = viewModel()
+            val settings by vm.settings.collectAsStateWithLifecycle()
+            IOSGalleryTheme(
+                darkTheme = settings.darkOverride ?: isSystemInDarkTheme(),
+                glassOpacity = settings.glassOpacity
+            ) {
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = GalleryTheme.palette.background
                 ) {
-                    GalleryRoot()
+                    GalleryRoot(vm = vm)
                 }
             }
         }
@@ -131,6 +138,7 @@ class MainActivity : ComponentActivity() {
 private sealed interface Screen {
     data object Tabs : Screen
     data object Trash : Screen
+    data object Customize : Screen
     data class DeviceAlbumDetail(val bucketId: Long) : Screen
     data class ManagedAlbumDetail(val albumId: String) : Screen
 }
@@ -145,6 +153,7 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
     val palette = GalleryTheme.palette
 
     val items by vm.items.collectAsStateWithLifecycle()
+    val settings by vm.settings.collectAsStateWithLifecycle()
     val meta by vm.meta.collectAsStateWithLifecycle()
     val loading by vm.loading.collectAsStateWithLifecycle()
 
@@ -365,6 +374,7 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                                 vm = vm,
                                 onOpenViewer = { list, index -> viewer = ViewerRequest(list, index) },
                                 onSelectionActive = { librarySelection = it },
+                                onOpenCustomize = { screen = Screen.Customize },
                                 onOpenTrash = { screen = Screen.Trash },
                                 onMessage = message
                             )
@@ -410,6 +420,15 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                             )
                         }
                     }
+
+                    Screen.Customize -> CustomizeScreen(
+                        settings = settings,
+                        onDockScale = { vm.setDockScale(it) },
+                        onGlassOpacity = { vm.setGlassOpacity(it) },
+                        onThemeMode = { vm.setThemeMode(it) },
+                        onReset = { vm.resetSettings() },
+                        onBack = { screen = Screen.Tabs }
+                    )
 
                     Screen.Trash -> TrashScreen(
                         entries = meta.trash,
@@ -473,7 +492,8 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
             ) {
                 GalleryBottomBar(
                     current = tab,
-                    onSelect = { tab = it }
+                    onSelect = { tab = it },
+                    scale = settings.dockScale
                 )
             }
 

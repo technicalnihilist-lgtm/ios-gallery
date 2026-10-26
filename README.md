@@ -231,3 +231,8 @@ app/src/main/java/com/hubclub/iosgallery/
 ## Licence
 
 MIT — see [LICENSE](LICENSE).
+
+Trademark note: iOS Gallery is an independent project and is not affiliated with, endorsed by
+or connected to Apple Inc. "iOS", "iPhone", "iPad" and "macOS" are trademarks of Apple Inc.
+The flower/aperture app icon is original artwork created for this project and is not Apple's
+Photos icon.

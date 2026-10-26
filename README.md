@@ -81,7 +81,16 @@ app folds back towards its icon instead of vanishing.
 0.9-damped spring — while the old one drifts back (fade, `1.0 → 1.015`). Popping mirrors it
 exactly, so going back feels like the same movement reversed.
 
-**Tabs.** Cross-fade with a `0.99 → 1.0` scale, 220 ms in / 140 ms out.
+**Navigation options.** Switching between Library, Albums, Favorites and Search slides the
+content the same way the glass capsule travels: the incoming screen enters from the side of the
+tab you moved towards (`width / 7` on a 0.92-damped spring) while the outgoing one leaves the
+other way (`width / 11`), both cross-fading with a `0.985 → 1.0` scale. Direction is derived from
+the tab order, so moving right always feels like moving right.
+
+**Photos.** Swiping between photos slides them with a parallax: the photo you are leaving drifts
+(`0.16 × width`), shrinks to `0.95` and dims to `0.68`, while the next one settles in. The pager
+snaps one photo at a time and pre-loads the neighbours (`beyondViewportPageCount = 1`), and the
+filename plus `3 of 42` counter cross-fade upwards as you switch.
 
 **Bottom bar.** The blue translucent capsule glides between tabs on
 `spring(dampingRatio = 0.88, stiffness = 520)` — about 300 ms with a whisper of overshoot — and
@@ -118,13 +127,13 @@ layer for Android 13 themed icons.
 for the current file).
 
 ```bash
-adb install iOS-Gallery-1.2.apk
+adb install iOS-Gallery-1.3.apk
 ```
 
 Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
 
 * Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
-* `v1.2` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
+* `v1.3` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
   dex ~40 MB of libraries in one go, which exceeded the per-command time limit of the build
   machine used here; the app itself is identical. Build `assembleRelease` locally for a
   non-debuggable APK.

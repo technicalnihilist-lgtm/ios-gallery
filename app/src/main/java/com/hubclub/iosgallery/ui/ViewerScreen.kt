@@ -1,5 +1,7 @@
 package com.hubclub.iosgallery.ui
 
+import androidx.compose.animation.togetherWith
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.layout.PaddingValues
 import android.app.Activity
 import android.content.Intent
@@ -8,9 +10,12 @@ import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
 import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.gestures.detectTapGestures
@@ -31,6 +36,8 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.pager.HorizontalPager
+import androidx.compose.foundation.pager.PagerDefaults
+import androidx.compose.foundation.pager.PagerSnapDistance
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -82,6 +89,7 @@ import com.hubclub.iosgallery.util.formatDateTime
 import com.hubclub.iosgallery.util.formatDuration
 import com.hubclub.iosgallery.util.formatResolution
 import com.hubclub.iosgallery.util.formatSize
+import kotlin.math.abs
 import kotlinx.coroutines.launch
 
 data class ViewerRequest(val items: List<MediaItem>, val index: Int)
@@ -192,12 +200,29 @@ fun ViewerScreen(
         HorizontalPager(
             state = pagerState,
             userScrollEnabled = !zoomed,
+            beyondViewportPageCount = 1,
+            flingBehavior = PagerDefaults.flingBehavior(
+                state = pagerState,
+                pagerSnapDistance = PagerSnapDistance.atMost(1)
+            ),
             modifier = Modifier.fillMaxSize()
         ) { page ->
             val item = request.items[page]
             Box(
                 modifier = Modifier
                     .fillMaxSize()
+                    .graphicsLayer {
+                        // The photo you are leaving drifts, shrinks a touch and dims,
+                        // so switching between photos reads as one fluid slide.
+                        val pageOffset = (pagerState.currentPage - page) +
+                            pagerState.currentPageOffsetFraction
+                        val distance = abs(pageOffset).coerceIn(0f, 1f)
+                        alpha = 1f - 0.32f * distance
+                        translationX = size.width * pageOffset * 0.16f
+                        val shrink = 1f - 0.05f * distance
+                        scaleX = shrink
+                        scaleY = shrink
+                    }
                     .pointerInput(item.id) {
                         detectTapGestures(onTap = { chromeVisible = !chromeVisible })
                     },
@@ -253,26 +278,35 @@ fun ViewerScreen(
                         tint = palette.primaryText,
                         size = 38.dp
                     )
-                    Column(
+                    AnimatedContent(
+                        targetState = pagerState.currentPage,
+                        transitionSpec = {
+                            (fadeIn(tween(180)) + slideInVertically { it / 4 }) togetherWith
+                                (fadeOut(tween(120)) + slideOutVertically { -it / 4 })
+                        },
+                        label = "photoTitle",
                         modifier = Modifier
                             .weight(1f)
                             .padding(horizontal = 4.dp)
-                    ) {
-                        Text(
-                            text = current.name,
-                            color = palette.primaryText,
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.SemiBold,
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                        Text(
-                            text = if (request.items.size > 1)
-                                "${pagerState.currentPage + 1} of ${request.items.size}"
-                            else if (current.isVideo) "Video" else "Photo",
-                            color = palette.secondaryText,
-                            fontSize = 11.sp
-                        )
+                    ) { page ->
+                        val shown = request.items.getOrNull(page) ?: current
+                        Column {
+                            Text(
+                                text = shown.name,
+                                color = palette.primaryText,
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                maxLines = 1,
+                                overflow = TextOverflow.Ellipsis
+                            )
+                            Text(
+                                text = if (request.items.size > 1)
+                                    "${page + 1} of ${request.items.size}"
+                                else if (shown.isVideo) "Video" else "Photo",
+                                color = palette.secondaryText,
+                                fontSize = 11.sp
+                            )
+                        }
                     }
                     CircleIconButton(
                         icon = if (isFavorite) GalleryIcons.HeartFilled else GalleryIcons.Heart,

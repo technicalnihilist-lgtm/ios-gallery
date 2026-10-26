@@ -302,17 +302,31 @@ fun GalleryRoot(vm: GalleryViewModel = viewModel()) {
                     Screen.Tabs -> AnimatedContent(
                         targetState = tab,
                         transitionSpec = {
-                            (fadeIn(tween(220)) + scaleIn(
-                                initialScale = 0.99f,
-                                animationSpec = tween(
-                                    durationMillis = 260,
-                                    easing = FastOutSlowInEasing
+                            // The content travels the same way the glass capsule does.
+                            val direction =
+                                if (targetState.ordinal > initialState.ordinal) 1 else -1
+                            (slideInHorizontally(
+                                animationSpec = spring(
+                                    dampingRatio = 0.92f,
+                                    stiffness = Spring.StiffnessMediumLow
                                 )
-                            )) togetherWith
-                                (fadeOut(tween(140)) + scaleOut(
-                                    targetScale = 1.005f,
-                                    animationSpec = tween(140)
-                                ))
+                            ) { width -> direction * width / 7 } +
+                                fadeIn(tween(240, easing = FastOutSlowInEasing)) +
+                                scaleIn(
+                                    initialScale = 0.985f,
+                                    animationSpec = tween(
+                                        durationMillis = 280,
+                                        easing = FastOutSlowInEasing
+                                    )
+                                )) togetherWith
+                                (slideOutHorizontally(
+                                    animationSpec = tween(
+                                        durationMillis = 240,
+                                        easing = FastOutSlowInEasing
+                                    )
+                                ) { width -> -direction * width / 11 } +
+                                    fadeOut(tween(180)) +
+                                    scaleOut(targetScale = 0.995f, animationSpec = tween(200)))
                         },
                         label = "tab"
                     ) { currentTab ->

@@ -91,7 +91,7 @@ fun TrashScreen(
                 )
                 LazyVerticalGrid(
                     columns = GridCells.Adaptive(minSize = 110.dp),
-                    contentPadding = PaddingValues(horizontal = 2.dp, vertical = 2.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp, vertical = 2.dp),
                     horizontalArrangement = Arrangement.spacedBy(2.dp),
                     verticalArrangement = Arrangement.spacedBy(2.dp),
                     modifier = Modifier.fillMaxSize()

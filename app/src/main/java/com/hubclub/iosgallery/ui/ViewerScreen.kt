@@ -1,5 +1,6 @@
 package com.hubclub.iosgallery.ui
 
+import androidx.compose.foundation.layout.PaddingValues
 import android.app.Activity
 import android.content.Intent
 import android.net.Uri
@@ -225,16 +226,24 @@ fun ViewerScreen(
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            listOf(palette.background.copy(alpha = 0.94f), Color.Transparent)
+                            listOf(palette.background.copy(alpha = 0.55f), Color.Transparent)
                         )
                     )
                     .statusBarsPadding()
+                    .padding(horizontal = 12.dp, vertical = 8.dp)
             ) {
+                GlassPanel(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(22.dp),
+                    elevation = 18.dp,
+                    contentPadding = PaddingValues(
+                        start = 6.dp, end = 8.dp, top = 6.dp, bottom = 6.dp
+                    )
+                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .height(48.dp)
-                        .padding(horizontal = 8.dp),
+                        .height(48.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     CircleIconButton(
@@ -283,6 +292,7 @@ fun ViewerScreen(
                         size = 38.dp
                     )
                 }
+                }
             }
         }
 
@@ -298,16 +308,23 @@ fun ViewerScreen(
                     .fillMaxWidth()
                     .background(
                         Brush.verticalGradient(
-                            listOf(Color.Transparent, palette.background.copy(alpha = 0.96f))
+                            listOf(Color.Transparent, palette.background.copy(alpha = 0.7f))
                         )
                     )
+                    .windowInsetsPadding(WindowInsets.navigationBars)
+                    .padding(horizontal = 16.dp, vertical = 12.dp)
             ) {
+                GlassPanel(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(26.dp),
+                    elevation = 24.dp
+                ) {
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .windowInsetsPadding(WindowInsets.navigationBars)
-                        .padding(top = 26.dp, bottom = 8.dp),
-                    horizontalArrangement = Arrangement.SpaceEvenly
+                        .height(70.dp),
+                    horizontalArrangement = Arrangement.SpaceEvenly,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
                     ViewerAction(GalleryIcons.Share, "Share") {
                         context.startActivity(FileOps.shareIntent(listOf(current)))
@@ -324,6 +341,7 @@ fun ViewerScreen(
                         trash(listOf(current))
                         onClose()
                     }
+                }
                 }
             }
         }
@@ -538,7 +556,7 @@ private fun InfoSheet(item: MediaItem, onDismiss: () -> Unit) {
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = if (palette.isDark) Color(0xFF1C1C1E) else Color(0xFFF7F7FA),
+        containerColor = palette.card.copy(alpha = 0.94f),
         scrimColor = palette.scrim,
         shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp)
     ) {

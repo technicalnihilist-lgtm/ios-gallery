@@ -21,6 +21,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -131,7 +132,7 @@ fun LibraryScreen(
                     favorites = favorites,
                     selectionMode = selectionMode,
                     selectedIds = selectedIds,
-                    contentPadding = PaddingValues(horizontal = 2.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp),
                     bottomPadding = bottomBarHeight + 16.dp,
                     showHeaders = true,
                     onItemClick = { item ->
@@ -166,19 +167,20 @@ fun LibraryScreen(
         Column(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    Brush.verticalGradient(
-                        listOf(palette.barBackground.copy(alpha = 0.9f), palette.barBackground)
-                    )
-                )
+                .windowInsetsPadding(WindowInsets.navigationBars)
+                .padding(horizontal = 16.dp, vertical = 12.dp)
         ) {
-            Hairline()
+            GlassPanel(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(26.dp),
+                elevation = 26.dp
+            ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-                    .padding(vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceEvenly
+                    .height(68.dp),
+                horizontalArrangement = Arrangement.SpaceEvenly,
+                verticalAlignment = Alignment.CenterVertically
             ) {
                 SelectionAction(
                     icon = GalleryIcons.Share,
@@ -211,6 +213,7 @@ fun LibraryScreen(
                     trash(selectedItems)
                     exitSelection()
                 }
+            }
             }
         }
     }
@@ -288,11 +291,20 @@ private fun SelectionTopBar(
     onSelectAll: () -> Unit
 ) {
     val palette = GalleryTheme.palette
-    Column(Modifier.fillMaxWidth()) {
+    Column(
+        Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp)
+    ) {
+        GlassPanel(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            elevation = 16.dp,
+            contentPadding = PaddingValues(start = 6.dp, end = 12.dp, top = 8.dp, bottom = 8.dp)
+        ) {
         Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 8.dp, end = 12.dp, top = 8.dp, bottom = 8.dp),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             CircleIconButton(
@@ -313,15 +325,15 @@ private fun SelectionTopBar(
             Text(
                 text = "Select All",
                 color = palette.accent,
-                fontSize = 15.sp,
+                fontSize = 14.sp,
                 fontWeight = FontWeight.Medium,
                 modifier = Modifier
-                    .clip(RoundedCornerShape(8.dp))
-                    .combinedClickable(onClick = onSelectAll)
-                    .padding(horizontal = 8.dp, vertical = 6.dp)
+                    .clip(RoundedCornerShape(10.dp))
+                    .glassClickable(pressedScale = 0.92f, onClick = onSelectAll)
+                    .padding(horizontal = 10.dp, vertical = 6.dp)
             )
         }
-        Hairline()
+        }
     }
 }
 

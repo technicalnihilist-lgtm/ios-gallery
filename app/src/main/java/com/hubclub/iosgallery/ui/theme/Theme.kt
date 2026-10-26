@@ -18,6 +18,7 @@ import androidx.compose.ui.unit.sp
 @Immutable
 data class GalleryPalette(
     val background: Color,
+    val backgroundDeep: Color,
     val groupedBackground: Color,
     val card: Color,
     val primaryText: Color,
@@ -25,6 +26,7 @@ data class GalleryPalette(
     val tertiaryText: Color,
     val separator: Color,
     val accent: Color,
+    val accentSoft: Color,
     val favorite: Color,
     val barBackground: Color,
     val barText: Color,
@@ -32,55 +34,108 @@ data class GalleryPalette(
     val isDark: Boolean
 )
 
+/**
+ * Tokens for the liquid-glass material.
+ *
+ * Panels are built from four layers: a translucent fill, a hairline border that is
+ * brighter at the top edge, a diagonal specular sheen, and a soft drop shadow that
+ * lifts the panel off the content behind it.
+ */
+@Immutable
+data class GlassTokens(
+    val fillTop: Color,
+    val fillBottom: Color,
+    val borderTop: Color,
+    val borderBottom: Color,
+    val sheen: Color,
+    val shadow: Color,
+    val highlight: Color,
+    val tintedFill: Color,
+    val scrimStart: Color,
+    val scrimEnd: Color
+)
+
 private val LightPalette = GalleryPalette(
-    background = Color(0xFFFFFFFF),
-    groupedBackground = Color(0xFFF2F2F7),
+    background = Color(0xFFF4F6FB),
+    backgroundDeep = Color(0xFFE8ECF6),
+    groupedBackground = Color(0x66FFFFFF),
     card = Color(0xFFFFFFFF),
-    primaryText = Color(0xFF1C1C1E),
-    secondaryText = Color(0xFF7C7C82),
-    tertiaryText = Color(0xFFAEAEB2),
-    separator = Color(0x1A3C3C43),
+    primaryText = Color(0xFF11131A),
+    secondaryText = Color(0xFF6B6F7B),
+    tertiaryText = Color(0xFF9A9EAA),
+    separator = Color(0x143C3C43),
     accent = Color(0xFF0A84FF),
+    accentSoft = Color(0x1F0A84FF),
     favorite = Color(0xFFFF375F),
-    barBackground = Color(0xF7F9F9FB),
-    barText = Color(0xFF1C1C1E),
-    scrim = Color(0x66000000),
+    barBackground = Color(0xCCFFFFFF),
+    barText = Color(0xFF11131A),
+    scrim = Color(0x59000000),
     isDark = false
 )
 
 private val DarkPalette = GalleryPalette(
-    background = Color(0xFF000000),
-    groupedBackground = Color(0xFF1C1C1E),
-    card = Color(0xFF1C1C1E),
+    background = Color(0xFF0A0A0C),
+    backgroundDeep = Color(0xFF000000),
+    groupedBackground = Color(0x14FFFFFF),
+    card = Color(0xFF17171B),
     primaryText = Color(0xFFFFFFFF),
-    secondaryText = Color(0xFF9E9EA4),
-    tertiaryText = Color(0xFF6C6C70),
-    separator = Color(0x2EFFFFFF),
-    accent = Color(0xFF0A84FF),
+    secondaryText = Color(0xFF9C9CA6),
+    tertiaryText = Color(0xFF6C6C78),
+    separator = Color(0x1FFFFFFF),
+    accent = Color(0xFF4DA3FF),
+    accentSoft = Color(0x334DA3FF),
     favorite = Color(0xFFFF375F),
-    barBackground = Color(0xF7121214),
+    barBackground = Color(0xCC17171B),
     barText = Color(0xFFFFFFFF),
     scrim = Color(0x99000000),
     isDark = true
 )
 
+private val LightGlass = GlassTokens(
+    fillTop = Color(0xE0FFFFFF),
+    fillBottom = Color(0xB8FFFFFF),
+    borderTop = Color(0xFFFFFFFF),
+    borderBottom = Color(0x59FFFFFF),
+    sheen = Color(0x66FFFFFF),
+    shadow = Color(0xFF1B2333),
+    highlight = Color(0xCCFFFFFF),
+    tintedFill = Color(0x330A84FF),
+    scrimStart = Color(0x00F4F6FB),
+    scrimEnd = Color(0xE6F4F6FB)
+)
+
+private val DarkGlass = GlassTokens(
+    fillTop = Color(0xB32C2C33),
+    fillBottom = Color(0x99141418),
+    borderTop = Color(0x4DFFFFFF),
+    borderBottom = Color(0x0FFFFFFF),
+    sheen = Color(0x1FFFFFFF),
+    shadow = Color(0xFF000000),
+    highlight = Color(0x33FFFFFF),
+    tintedFill = Color(0x334DA3FF),
+    scrimStart = Color(0x000A0A0C),
+    scrimEnd = Color(0xF20A0A0C)
+)
+
 val LocalGalleryPalette = staticCompositionLocalOf { LightPalette }
+val LocalGlass = staticCompositionLocalOf { LightGlass }
 
 object GalleryTheme {
     val palette: GalleryPalette
         @Composable get() = LocalGalleryPalette.current
+
+    val glass: GlassTokens
+        @Composable get() = LocalGlass.current
 }
 
 private val GalleryTypography = Typography(
-    // Large navigation titles, e.g. "Library"
     displaySmall = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.Bold,
-        fontSize = 32.sp,
-        lineHeight = 36.sp,
-        letterSpacing = (-0.6).sp
+        fontSize = 30.sp,
+        lineHeight = 34.sp,
+        letterSpacing = (-0.7).sp
     ),
-    // Section headers, e.g. "Today"
     titleMedium = TextStyle(
         fontFamily = FontFamily.SansSerif,
         fontWeight = FontWeight.SemiBold,
@@ -127,6 +182,7 @@ fun IOSGalleryTheme(
     content: @Composable () -> Unit
 ) {
     val palette = if (darkTheme) DarkPalette else LightPalette
+    val glass = if (darkTheme) DarkGlass else LightGlass
     val scheme = if (darkTheme) {
         darkColorScheme(
             primary = palette.accent,
@@ -154,7 +210,10 @@ fun IOSGalleryTheme(
             error = Color(0xFFD70015)
         )
     }
-    CompositionLocalProvider(LocalGalleryPalette provides palette) {
+    CompositionLocalProvider(
+        LocalGalleryPalette provides palette,
+        LocalGlass provides glass
+    ) {
         MaterialTheme(colorScheme = scheme, typography = GalleryTypography, content = content)
     }
 }

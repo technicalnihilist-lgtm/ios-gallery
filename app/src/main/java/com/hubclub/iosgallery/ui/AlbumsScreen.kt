@@ -91,7 +91,7 @@ fun AlbumsScreen(
 
         LazyVerticalGrid(
             columns = GridCells.Fixed(2),
-            contentPadding = PaddingValues(start = 20.dp, end = 20.dp, bottom = bottomBarHeight + 20.dp),
+            contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = bottomBarHeight + 20.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp),
             verticalArrangement = Arrangement.spacedBy(18.dp),
             modifier = Modifier.fillMaxSize()
@@ -225,13 +225,16 @@ fun AlbumsScreen(
 @Composable
 private fun RecentlyDeletedRow(count: Int, onClick: () -> Unit) {
     val palette = GalleryTheme.palette
-    Row(
+    GlassPanel(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(14.dp))
-            .background(palette.groupedBackground)
-            .combinedClickable(onClick = onClick)
-            .padding(horizontal = 14.dp, vertical = 14.dp),
+            .glassClickable(pressedScale = 0.97f, onClick = onClick),
+        shape = RoundedCornerShape(20.dp),
+        elevation = 14.dp,
+        contentPadding = PaddingValues(horizontal = 14.dp, vertical = 14.dp)
+    ) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Box(
@@ -266,6 +269,7 @@ private fun RecentlyDeletedRow(count: Int, onClick: () -> Unit) {
             modifier = Modifier.size(16.dp)
         )
     }
+    }
 }
 
 @Composable
@@ -278,17 +282,21 @@ fun AlbumCard(
 ) {
     val palette = GalleryTheme.palette
     val context = LocalContext.current
-    Column(
+    GlassPanel(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .fillMaxWidth()
+            .glassClickable(pressedScale = 0.96f, onClick = onClick, onLongClick = onLongClick),
+        shape = RoundedCornerShape(22.dp),
+        elevation = 16.dp,
+        contentPadding = PaddingValues(6.dp)
     ) {
+        Column {
         Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .aspectRatio(1f)
-                .clip(RoundedCornerShape(12.dp))
-                .background(if (palette.isDark) Color(0xFF1C1C1E) else Color(0xFFEFEFF2))
+                .clip(RoundedCornerShape(16.dp))
+                .background(if (palette.isDark) Color(0xFF1C1C1E) else Color(0xFFE4E8F2))
         ) {
             if (cover != null) {
                 AsyncImage(
@@ -326,20 +334,22 @@ fun AlbumCard(
                 }
             }
         }
-        Spacer(Modifier.height(7.dp))
-        Text(
-            text = name,
-            color = palette.primaryText,
-            fontSize = 14.sp,
-            fontWeight = FontWeight.Medium,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
-        Text(
-            text = formatCount(count, "item"),
-            color = palette.secondaryText,
-            fontSize = 12.sp
-        )
+        Column(Modifier.padding(start = 8.dp, end = 8.dp, top = 8.dp, bottom = 6.dp)) {
+            Text(
+                text = name,
+                color = palette.primaryText,
+                fontSize = 13.5.sp,
+                fontWeight = FontWeight.Medium,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = formatCount(count, "item"),
+                color = palette.secondaryText,
+                fontSize = 11.5.sp
+            )
+        }
+        }
     }
 }
 
@@ -410,7 +420,7 @@ fun AlbumDetailScreen(
                     favorites = favorites,
                     selectionMode = false,
                     selectedIds = emptySet(),
-                    contentPadding = PaddingValues(horizontal = 2.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp),
                     bottomPadding = bottomBarHeight + 16.dp,
                     showHeaders = false,
                     onItemClick = { item ->

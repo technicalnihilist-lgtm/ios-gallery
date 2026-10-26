@@ -46,7 +46,7 @@ fun FavoritesScreen(
                     favorites = favorites,
                     selectionMode = false,
                     selectedIds = emptySet(),
-                    contentPadding = PaddingValues(horizontal = 2.dp),
+                    contentPadding = PaddingValues(horizontal = 10.dp),
                     bottomPadding = bottomBarHeight + 16.dp,
                     onItemClick = { item ->
                         val index = favoriteItems.indexOfFirst { it.id == item.id }

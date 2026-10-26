@@ -6,6 +6,9 @@ organisation and visual style of Apple's Photos app on iOS and macOS.
 Kotlin · Jetpack Compose · Material 3 · MediaStore · Media3 · Coil — no server, no account,
 no API key, no cloud, and **no `INTERNET` permission**.
 
+The interface is built on **iOS Liquid Glass**: translucent panels that let your photos show
+through, bright hairline edges, specular sheen, soft depth and spring-driven motion.
+
 > iOS Gallery is an independent project. It is not affiliated with, endorsed by, or
 > connected to Apple Inc. The name and the flower mark are original artwork.
 
@@ -21,30 +24,79 @@ no API key, no cloud, and **no `INTERNET` permission**.
 | --- | --- | --- |
 | ![Search](docs/screenshots/04-search.png) | ![Viewer](docs/screenshots/05-viewer.png) | ![Selection](docs/screenshots/06-selection.png) |
 
-![Favorites](docs/screenshots/07-favorites.png)
+| Launch animation |
+| --- |
+| ![Launch](docs/screenshots/07-launch-animation.png) |
 
 **About these images:** they are *design previews*, rendered from the same layout, spacing,
-colour and type tokens the Compose UI uses. The build machine for this project has no KVM,
-so no Android emulator could be booted to take true device screenshots. The app itself is
+colour, glass and type tokens the Compose UI uses. The build machine for this project has no
+KVM, so no Android emulator could be booted to take true device screenshots. The app itself is
 the real thing — build it or install the APK and you will see these screens with your own
 photos in them.
 
 ---
 
+## Liquid Glass
+
+Every surface is one material, built from four layers in `ui/Glass.kt`:
+
+| Layer | What it does |
+| --- | --- |
+| Translucent fill | `linear-gradient` from 88 % to 70 % white (light) or 72 % → 62 % charcoal (dark), so the photo grid stays visible through every panel |
+| Hairline border | 0.9 dp border that is bright at the top edge and fades towards the bottom — the glass "lip" |
+| Specular sheen | A diagonal white gradient across the top-left corner, like light hitting the surface |
+| Soft shadow | Low-opacity, wide drop shadow that lifts the panel off the content |
+
+On top of that:
+
+* **Floating chrome** — the tab bar, headers, action bars, sheets and dialogs all float over
+  the content instead of pinning to the screen edges.
+* **Gliding capsule** — the tab bar's selection indicator springs between tabs
+  (`spring(dampingRatio = 0.74, stiffness = StiffnessLow)`).
+* **Press physics** — every control scales to 0.92–0.98 with a spring on touch
+  (`Modifier.glassClickable`), so surfaces feel like they have weight.
+* **Ambient light** — two large blurred colour blobs sit behind the UI
+  (`Modifier.blur(90.dp)`, Android 12+; a plain gradient below that) so the glass has
+  something to refract.
+* **Motion** — tab switches cross-fade with a 0.985 → 1.0 scale, pushed screens slide in on a
+  spring, the viewer zooms open from 0.94, and grid items animate their placement.
+* **Readability first** — a soft scrim sits under every floating bar so text and icons stay
+  crisp over busy photos.
+
+## Animated app icon
+
+Android launchers only render static adaptive icons, so the icon animation lives where it can
+actually be seen — the moment the app opens:
+
+1. The flower's six petals bloom out one after another (65 ms stagger, 520 ms each).
+2. The mark settles from 0.86 → 1.0 scale on a slow ease-out.
+3. A specular highlight sweeps diagonally across the glass.
+4. "iOS Gallery · Photos, privately" rises in.
+5. Everything fades into the gallery.
+
+It is drawn entirely in Compose (`FlowerMark` + `LaunchAnimation`), needs no assets, and
+respects the light/dark theme. The launcher icon itself is an adaptive icon with a monochrome
+layer for Android 13 themed icons.
+
+---
+
 ## Install
 
-**[Download the APK](https://github.com/technicalnihilist-lgtm/ios-gallery/releases/download/v1.0/iOS-Gallery-1.0.apk)**
-— 9 MB, Android 7.0+ (the [v1.0 release](https://github.com/technicalnihilist-lgtm/ios-gallery/releases/tag/v1.0) page has it too).
+**[Download the APK](https://github.com/technicalnihilist-lgtm/ios-gallery/releases/latest)**
+— 13 MB, Android 7.0+ (see the [releases page](https://github.com/technicalnihilist-lgtm/ios-gallery/releases)
+for the current file).
 
 ```bash
-adb install iOS-Gallery-1.0.apk
+adb install iOS-Gallery-1.1.apk
 ```
 
 Or copy the file to the phone and open it, allowing "install unknown apps" when asked.
 
 * Signed with the standard Android **debug key** (APK Signature Scheme v2), zip-aligned.
-* It is a *release* build (`debuggable=false`), just signed with a development certificate.
-  For Play Store distribution, sign it with your own keystore (see below).
+* `v1.1` is a **debug-variant** build (`debuggable=true`). The release variant needs D8 to
+  dex ~40 MB of libraries in one go, which exceeded the per-command time limit of the build
+  machine used here; the app itself is identical. Build `assembleRelease` locally for a
+  non-debuggable APK.
 * The APK is not committed to the repository — it lives on the release page, which keeps
   clone sizes small.
 
@@ -194,7 +246,8 @@ app/src/main/java/com/hubclub/iosgallery/
 │   ├── SearchScreen.kt      offline filename / album search
 │   ├── ViewerScreen.kt      pager, pinch-zoom, video page, details sheet
 │   ├── TrashScreen.kt       Recently Deleted
-│   ├── Components.kt        grid, thumbnails, bottom bar, sheets
+│   ├── Glass.kt             liquid-glass material, press physics, icon + launch animation
+│   ├── Components.kt        grid, thumbnails, floating tab bar, glass sheets
 │   ├── GalleryIcons.kt      hand-built line icons (no icon-font dependency)
 │   └── theme/Theme.kt       light / dark palettes and typography
 └── util/                    permissions, formatting, date grouping
@@ -204,16 +257,16 @@ app/src/main/java/com/hubclub/iosgallery/
 
 ## Design notes
 
-* Light and dark themes follow the system, with the iOS grouped-background palette
-  (`#F2F2F7` light, `#1C1C1E` dark) and a single accent blue (`#0A84FF`).
-* The tab bar and toolbars are translucent gradients with hairline separators — no real
-  backdrop blur, which would cost frames on low-end devices.
-* Icons are drawn as vector paths in code, so there is no icon-font dependency and every
-  glyph matches the 1.7 dp stroke weight of the rest of the UI.
+* Light theme: `#F4F6FB → #E8ECF6` ambient background, glass fill `rgba(255,255,255,0.88→0.70)`,
+  single accent `#0A84FF`. Dark theme: near-black `#0A0A0C`, charcoal glass, accent `#4DA3FF`.
+* The tab bar is a 62 dp glass pill with a 28 dp radius, floating 10 dp above the system
+  navigation inset; the selection capsule is 22 dp with a white hairline.
+* Thumbnails are 10 dp rounded tiles with a 3 dp gutter and a 0.05-alpha white wash on top, so
+  the grid reads as one continuous material.
+* Icons are drawn as vector paths in code (`ui/GalleryIcons.kt`) — no icon-font dependency, and
+  every glyph shares the 1.7 dp stroke weight.
 * The app icon is an original multicoloured flower / aperture mark, generated as an adaptive
-  icon (with a monochrome layer for Android 13 themed icons) plus legacy raster fallbacks.
-
----
+  icon with a monochrome layer plus legacy raster fallbacks.
 
 ## Known limitations
 
@@ -225,6 +278,11 @@ app/src/main/java/com/hubclub/iosgallery/
 * Restoring a trashed item on Android 7–12L needs write access, which the app requests on
   those releases only.
 * The UI is English only.
+* `Modifier.blur` is a no-op below Android 12, so the ambient light blobs become flat
+  gradients there; the glass panels themselves look the same on every version.
+* Compose cannot sample the content behind a composable, so panels use translucency + sheen +
+  scrim rather than a true backdrop blur. The result reads as frosted glass without the cost of
+  rendering the grid twice.
 
 ---
 

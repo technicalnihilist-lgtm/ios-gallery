@@ -1,13 +1,15 @@
 package com.hubclub.iosgallery.ui
 
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.animateDpAsState
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.spring
-import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.combinedClickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -19,6 +21,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
@@ -45,14 +48,15 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
@@ -76,8 +80,17 @@ enum class GalleryTab(val label: String, val icon: ImageVector) {
 
 @Composable
 fun Hairline(modifier: Modifier = Modifier) {
-    val palette = GalleryTheme.palette
-    Box(modifier.fillMaxWidth().height(0.6.dp).background(palette.separator))
+    val glass = GalleryTheme.glass
+    Box(
+        modifier
+            .fillMaxWidth()
+            .height(0.8.dp)
+            .background(
+                Brush.horizontalGradient(
+                    listOf(Color.Transparent, glass.borderBottom, Color.Transparent)
+                )
+            )
+    )
 }
 
 @Composable
@@ -88,28 +101,21 @@ fun CircleIconButton(
     modifier: Modifier = Modifier,
     tint: Color? = null,
     background: Color? = null,
-    size: Dp = 34.dp,
-    iconSize: Dp = 19.dp
+    size: Dp = 38.dp,
+    iconSize: Dp = 18.dp
 ) {
-    val palette = GalleryTheme.palette
-    Box(
-        modifier = modifier
-            .size(size)
-            .clip(CircleShape)
-            .background(background ?: Color.Transparent)
-            .combinedClickable(onClick = onClick),
-        contentAlignment = Alignment.Center
-    ) {
-        Icon(
-            imageVector = icon,
-            contentDescription = contentDescription,
-            tint = tint ?: palette.accent,
-            modifier = Modifier.size(iconSize)
-        )
-    }
+    GlassIconButton(
+        icon = icon,
+        contentDescription = contentDescription,
+        onClick = onClick,
+        modifier = modifier,
+        tint = tint,
+        size = size,
+        iconSize = iconSize
+    )
 }
 
-/** Big iOS-style screen title with an optional subtitle and trailing actions. */
+/** Floating glass header with the large screen title. */
 @Composable
 fun LargeTitleBar(
     title: String,
@@ -118,47 +124,55 @@ fun LargeTitleBar(
     trailing: @Composable RowScope.() -> Unit = {}
 ) {
     val palette = GalleryTheme.palette
-    Column(modifier = Modifier.fillMaxWidth().statusBarsPadding()) {
-        if (eyebrow != null) {
-            Text(
-                text = eyebrow,
-                color = palette.tertiaryText,
-                fontSize = 10.sp,
-                fontWeight = FontWeight.Medium,
-                letterSpacing = 0.8.sp,
-                modifier = Modifier.padding(start = 20.dp, top = 6.dp)
-            )
-        }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(start = 20.dp, end = 12.dp, top = if (eyebrow != null) 0.dp else 8.dp, bottom = 10.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp)
+    ) {
+        GlassPanel(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(24.dp),
+            elevation = 18.dp,
+            contentPadding = PaddingValues(start = 18.dp, end = 12.dp, top = 12.dp, bottom = 12.dp)
         ) {
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    color = palette.primaryText,
-                    fontSize = 32.sp,
-                    fontWeight = FontWeight.Bold,
-                    letterSpacing = (-0.6).sp
-                )
-                if (subtitle != null) {
-                    Spacer(Modifier.height(2.dp))
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column(modifier = Modifier.weight(1f)) {
+                    if (eyebrow != null) {
+                        Text(
+                            text = eyebrow,
+                            color = palette.secondaryText,
+                            fontSize = 9.sp,
+                            fontWeight = FontWeight.SemiBold,
+                            letterSpacing = 1.1.sp
+                        )
+                        Spacer(Modifier.height(2.dp))
+                    }
                     Text(
-                        text = subtitle,
-                        color = palette.secondaryText,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.Normal
+                        text = title,
+                        color = palette.primaryText,
+                        fontSize = 28.sp,
+                        fontWeight = FontWeight.Bold,
+                        letterSpacing = (-0.7).sp,
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
                     )
+                    if (subtitle != null) {
+                        Spacer(Modifier.height(2.dp))
+                        Text(
+                            text = subtitle,
+                            color = palette.secondaryText,
+                            fontSize = 12.sp
+                        )
+                    }
                 }
+                Row(verticalAlignment = Alignment.CenterVertically, content = trailing)
             }
-            Row(verticalAlignment = Alignment.CenterVertically, content = trailing)
         }
     }
 }
 
-/** Compact bar for pushed screens: back chevron, centred title, actions. */
+/** Floating glass bar for pushed screens: back, title, actions. */
 @Composable
 fun DetailTopBar(
     title: String,
@@ -166,36 +180,41 @@ fun DetailTopBar(
     actions: @Composable RowScope.() -> Unit = {}
 ) {
     val palette = GalleryTheme.palette
-    Column(Modifier.fillMaxWidth().statusBarsPadding()) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(50.dp)
-                .padding(horizontal = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .statusBarsPadding()
+            .padding(start = 12.dp, end = 12.dp, top = 8.dp, bottom = 4.dp)
+    ) {
+        GlassPanel(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(22.dp),
+            elevation = 16.dp,
+            contentPadding = PaddingValues(start = 6.dp, end = 10.dp, top = 7.dp, bottom = 7.dp)
         ) {
-            CircleIconButton(
-                icon = GalleryIcons.Back,
-                contentDescription = "Back",
-                onClick = onBack,
-                tint = palette.primaryText,
-                size = 38.dp,
-                iconSize = 20.dp
-            )
-            Text(
-                text = title,
-                color = palette.primaryText,
-                fontSize = 17.sp,
-                fontWeight = FontWeight.SemiBold,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier
-                    .weight(1f)
-                    .padding(horizontal = 4.dp)
-            )
-            Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                GlassIconButton(
+                    icon = GalleryIcons.Back,
+                    contentDescription = "Back",
+                    onClick = onBack,
+                    tint = palette.primaryText,
+                    size = 36.dp,
+                    iconSize = 18.dp
+                )
+                Text(
+                    text = title,
+                    color = palette.primaryText,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier
+                        .weight(1f)
+                        .padding(horizontal = 10.dp)
+                )
+                Row(verticalAlignment = Alignment.CenterVertically, content = actions)
+            }
         }
-        Hairline()
     }
 }
 
@@ -205,25 +224,28 @@ fun SectionTitle(text: String, trailing: String? = null) {
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, top = 18.dp, bottom = 10.dp),
+            .padding(start = 22.dp, end = 22.dp, top = 18.dp, bottom = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Text(
             text = text,
             color = palette.primaryText,
-            fontSize = 19.sp,
+            fontSize = 18.sp,
             fontWeight = FontWeight.SemiBold,
             letterSpacing = (-0.2).sp,
             modifier = Modifier.weight(1f)
         )
         if (trailing != null) {
-            Text(text = trailing, color = palette.secondaryText, fontSize = 13.sp)
+            Text(text = trailing, color = palette.secondaryText, fontSize = 12.sp)
         }
     }
 }
 
 // -------------------------------------------------------------- bottom bar
 
+/**
+ * Floating glass tab bar with a capsule that glides between tabs on a spring.
+ */
 @Composable
 fun GalleryBottomBar(
     current: GalleryTab,
@@ -231,58 +253,114 @@ fun GalleryBottomBar(
     modifier: Modifier = Modifier
 ) {
     val palette = GalleryTheme.palette
+    val glass = GalleryTheme.glass
+    val tabs = GalleryTab.entries
+    val selectedIndex = tabs.indexOf(current)
+
     Column(
         modifier = modifier
             .fillMaxWidth()
             .background(
                 Brush.verticalGradient(
-                    listOf(
-                        palette.barBackground.copy(alpha = 0.86f),
-                        palette.barBackground
-                    )
+                    listOf(glass.scrimStart, glass.scrimEnd)
                 )
             )
+            .windowInsetsPadding(WindowInsets.navigationBars)
     ) {
-        Hairline()
-        Row(
+        BoxWithConstraints(
             modifier = Modifier
                 .fillMaxWidth()
-                .windowInsetsPadding(WindowInsets.navigationBars)
-                .padding(top = 6.dp, bottom = 6.dp),
-            horizontalArrangement = Arrangement.SpaceEvenly,
-            verticalAlignment = Alignment.CenterVertically
+                .padding(horizontal = 16.dp)
+                .padding(top = 18.dp, bottom = 10.dp)
         ) {
-            GalleryTab.entries.forEach { tab ->
-                val selected = tab == current
-                val tint = if (selected) palette.accent else palette.secondaryText
-                val scale by animateFloatAsState(
-                    targetValue = if (selected) 1f else 0.94f,
-                    animationSpec = spring(dampingRatio = 0.6f, stiffness = 900f),
-                    label = "tabScale"
-                )
-                Column(
+            val tabWidth = maxWidth / tabs.size
+            val capsuleOffset by animateDpAsState(
+                targetValue = tabWidth * selectedIndex,
+                animationSpec = spring(
+                    dampingRatio = 0.74f,
+                    stiffness = Spring.StiffnessLow
+                ),
+                label = "capsule"
+            )
+            GlassPanel(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(28.dp),
+                elevation = 26.dp
+            ) {
+                Box(
                     modifier = Modifier
-                        .weight(1f)
-                        .clip(RoundedCornerShape(14.dp))
-                        .combinedClickable(onClick = { onSelect(tab) })
-                        .padding(vertical = 4.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally
+                        .fillMaxWidth()
+                        .height(62.dp)
                 ) {
-                    Icon(
-                        imageVector = tab.icon,
-                        contentDescription = tab.label,
-                        tint = tint,
+                    // the gliding selection capsule
+                    Box(
                         modifier = Modifier
-                            .size(25.dp)
-                            .scale(scale)
+                            .offset(x = capsuleOffset)
+                            .width(tabWidth)
+                            .height(62.dp)
+                            .padding(6.dp)
+                            .clip(RoundedCornerShape(22.dp))
+                            .background(
+                                Brush.verticalGradient(
+                                    listOf(
+                                        palette.accent.copy(alpha = 0.26f),
+                                        palette.accent.copy(alpha = 0.12f)
+                                    )
+                                )
+                            )
+                            .border(
+                                width = 0.9.dp,
+                                brush = Brush.verticalGradient(
+                                    listOf(
+                                        Color.White.copy(alpha = 0.55f),
+                                        Color.White.copy(alpha = 0.10f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(22.dp)
+                            )
                     )
-                    Spacer(Modifier.height(3.dp))
-                    Text(
-                        text = tab.label,
-                        color = tint,
-                        fontSize = 10.sp,
-                        fontWeight = if (selected) FontWeight.SemiBold else FontWeight.Medium
-                    )
+                    Row(modifier = Modifier.fillMaxSize()) {
+                        tabs.forEach { tab ->
+                            val selected = tab == current
+                            val tint = if (selected) palette.accent else palette.secondaryText
+                            val iconScale by animateFloatAsState(
+                                targetValue = if (selected) 1.06f else 1f,
+                                animationSpec = spring(
+                                    dampingRatio = 0.6f,
+                                    stiffness = Spring.StiffnessMedium
+                                ),
+                                label = "tabIcon"
+                            )
+                            Column(
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .fillMaxSize()
+                                    .glassClickable(pressedScale = 0.92f, onClick = { onSelect(tab) }),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.Center
+                            ) {
+                                Icon(
+                                    imageVector = tab.icon,
+                                    contentDescription = tab.label,
+                                    tint = tint,
+                                    modifier = Modifier
+                                        .size(22.dp)
+                                        .graphicsLayer {
+                                            scaleX = iconScale
+                                            scaleY = iconScale
+                                        }
+                                )
+                                Spacer(Modifier.height(3.dp))
+                                Text(
+                                    text = tab.label,
+                                    color = tint,
+                                    fontSize = 9.5.sp,
+                                    fontWeight = if (selected) FontWeight.SemiBold
+                                    else FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -291,7 +369,6 @@ fun GalleryBottomBar(
 
 // ------------------------------------------------------------------ thumbnails
 
-@OptIn(ExperimentalFoundationApi::class)
 @Composable
 fun MediaThumbnail(
     item: MediaItem,
@@ -299,18 +376,20 @@ fun MediaThumbnail(
     isFavorite: Boolean = false,
     selectionMode: Boolean = false,
     selected: Boolean = false,
-    cornerRadius: Dp = 5.dp,
+    cornerRadius: Dp = 10.dp,
     onClick: () -> Unit,
     onLongClick: () -> Unit
 ) {
     val palette = GalleryTheme.palette
+    val glass = GalleryTheme.glass
     val context = LocalContext.current
+    val shape = RoundedCornerShape(cornerRadius)
     Box(
         modifier = modifier
             .aspectRatio(1f)
-            .clip(RoundedCornerShape(cornerRadius))
-            .background(if (palette.isDark) Color(0xFF1C1C1E) else Color(0xFFEFEFF2))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
+            .clip(shape)
+            .background(if (palette.isDark) Color(0xFF16161A) else Color(0xFFE4E8F2))
+            .glassClickable(pressedScale = 0.94f, onClick = onClick, onLongClick = onLongClick)
     ) {
         AsyncImage(
             model = ImageRequest.Builder(context)
@@ -322,40 +401,37 @@ fun MediaThumbnail(
             modifier = Modifier.fillMaxSize()
         )
 
+        // a whisper of glass over every tile, so the grid reads as one material
+        Box(
+            Modifier
+                .fillMaxSize()
+                .background(
+                    Brush.verticalGradient(
+                        0f to Color.White.copy(alpha = 0.06f),
+                        0.5f to Color.Transparent
+                    )
+                )
+        )
+
         if (item.isVideo) {
-            Row(
+            GlassChip(
+                text = formatDuration(item.durationMs),
+                icon = GalleryIcons.VideoBadge,
                 modifier = Modifier
                     .align(Alignment.BottomStart)
-                    .padding(5.dp)
-                    .clip(RoundedCornerShape(6.dp))
-                    .background(Color(0x73000000))
-                    .padding(horizontal = 5.dp, vertical = 2.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Icon(
-                    imageVector = GalleryIcons.VideoBadge,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(9.dp)
-                )
-                Spacer(Modifier.width(3.dp))
-                Text(
-                    text = formatDuration(item.durationMs),
-                    color = Color.White,
-                    fontSize = 9.sp,
-                    fontWeight = FontWeight.Medium
-                )
-            }
+                    .padding(6.dp)
+            )
         }
 
         if (isFavorite && !selectionMode) {
             Box(
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
-                    .padding(5.dp)
-                    .size(16.dp)
+                    .padding(6.dp)
+                    .size(18.dp)
                     .clip(CircleShape)
-                    .background(Color(0x66000000)),
+                    .background(Color.Black.copy(alpha = 0.3f))
+                    .border(0.7.dp, Color.White.copy(alpha = 0.35f), CircleShape),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -371,18 +447,21 @@ fun MediaThumbnail(
             Box(
                 modifier = Modifier
                     .fillMaxSize()
-                    .background(if (selected) Color(0x330A84FF) else Color.Transparent)
+                    .background(if (selected) palette.accent.copy(alpha = 0.18f) else Color.Transparent)
             )
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
-                    .padding(5.dp)
-                    .size(19.dp)
+                    .padding(6.dp)
+                    .size(20.dp)
                     .clip(CircleShape)
-                    .background(if (selected) palette.accent else Color(0x4D000000))
+                    .background(
+                        if (selected) palette.accent else Color.Black.copy(alpha = 0.28f)
+                    )
                     .border(
                         width = 1.dp,
-                        color = if (selected) palette.accent else Color(0xCCFFFFFF),
+                        color = if (selected) Color.White.copy(alpha = 0.6f)
+                        else Color.White.copy(alpha = 0.7f),
                         shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
@@ -397,6 +476,13 @@ fun MediaThumbnail(
                 }
             }
         }
+        // hairline highlight along the top edge of the glass tile
+        Box(
+            Modifier
+                .fillMaxWidth()
+                .height(0.8.dp)
+                .background(glass.borderTop.copy(alpha = 0.35f))
+        )
     }
 }
 
@@ -418,8 +504,8 @@ fun MediaGrid(
     LazyVerticalGrid(
         columns = GridCells.Adaptive(minSize = 110.dp),
         contentPadding = contentPadding,
-        horizontalArrangement = Arrangement.spacedBy(2.dp),
-        verticalArrangement = Arrangement.spacedBy(2.dp),
+        horizontalArrangement = Arrangement.spacedBy(3.dp),
+        verticalArrangement = Arrangement.spacedBy(3.dp),
         modifier = Modifier.fillMaxSize()
     ) {
         groups.forEach { group ->
@@ -431,10 +517,10 @@ fun MediaGrid(
                     Text(
                         text = group.label,
                         color = palette.primaryText,
-                        fontSize = 19.sp,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.SemiBold,
                         letterSpacing = (-0.2).sp,
-                        modifier = Modifier.padding(start = 6.dp, top = 18.dp, bottom = 10.dp)
+                        modifier = Modifier.padding(start = 9.dp, top = 20.dp, bottom = 10.dp)
                     )
                 }
             }
@@ -445,6 +531,7 @@ fun MediaGrid(
                 val item = group.items[index]
                 MediaThumbnail(
                     item = item,
+                    modifier = Modifier.animateItem(),
                     isFavorite = item.id in favorites,
                     selectionMode = selectionMode,
                     selected = item.id in selectedIds,
@@ -471,45 +558,57 @@ fun EmptyState(
     modifier: Modifier = Modifier
 ) {
     val palette = GalleryTheme.palette
-    Column(
+    Box(
         modifier = modifier
             .fillMaxSize()
-            .padding(horizontal = 36.dp),
-        horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+            .padding(horizontal = 28.dp),
+        contentAlignment = Alignment.Center
     ) {
-        Box(
-            modifier = Modifier
-                .size(74.dp)
-                .clip(CircleShape)
-                .background(palette.groupedBackground),
-            contentAlignment = Alignment.Center
+        GlassPanel(
+            shape = RoundedCornerShape(28.dp),
+            elevation = 20.dp,
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 28.dp)
         ) {
-            Icon(
-                imageVector = icon,
-                contentDescription = null,
-                tint = palette.tertiaryText,
-                modifier = Modifier.size(32.dp)
-            )
-        }
-        Spacer(Modifier.height(18.dp))
-        Text(
-            text = title,
-            color = palette.primaryText,
-            fontSize = 20.sp,
-            fontWeight = FontWeight.SemiBold
-        )
-        Spacer(Modifier.height(8.dp))
-        Text(
-            text = message,
-            color = palette.secondaryText,
-            fontSize = 14.sp,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center,
-            lineHeight = 20.sp
-        )
-        if (actionLabel != null && onAction != null) {
-            Spacer(Modifier.height(22.dp))
-            PrimaryButton(label = actionLabel, onClick = onAction)
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Box(
+                    modifier = Modifier
+                        .size(66.dp)
+                        .clip(CircleShape)
+                        .background(palette.accentSoft)
+                        .border(
+                            0.9.dp,
+                            Color.White.copy(alpha = 0.5f),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = palette.accent,
+                        modifier = Modifier.size(28.dp)
+                    )
+                }
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    text = title,
+                    color = palette.primaryText,
+                    fontSize = 19.sp,
+                    fontWeight = FontWeight.SemiBold
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    text = message,
+                    color = palette.secondaryText,
+                    fontSize = 13.sp,
+                    textAlign = TextAlign.Center,
+                    lineHeight = 19.sp
+                )
+                if (actionLabel != null && onAction != null) {
+                    Spacer(Modifier.height(20.dp))
+                    PrimaryButton(label = actionLabel, onClick = onAction)
+                }
+            }
         }
     }
 }
@@ -522,13 +621,12 @@ fun PrimaryButton(
     filled: Boolean = true
 ) {
     val palette = GalleryTheme.palette
-    Box(
-        modifier = modifier
-            .clip(RoundedCornerShape(22.dp))
-            .background(if (filled) palette.accent else palette.groupedBackground)
-            .combinedClickable(onClick = onClick)
-            .padding(horizontal = 26.dp, vertical = 11.dp),
-        contentAlignment = Alignment.Center
+    GlassPanel(
+        modifier = modifier.glassClickable(pressedScale = 0.95f, onClick = onClick),
+        shape = RoundedCornerShape(22.dp),
+        elevation = if (filled) 14.dp else 8.dp,
+        tint = if (filled) palette.accent.copy(alpha = 0.92f) else null,
+        contentPadding = PaddingValues(horizontal = 26.dp, vertical = 11.dp)
     ) {
         Text(
             text = label,
@@ -568,51 +666,57 @@ fun GallerySearchField(
     onSearch: () -> Unit = {}
 ) {
     val palette = GalleryTheme.palette
-    TextField(
-        value = value,
-        onValueChange = onValueChange,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(44.dp),
-        placeholder = {
-            Text(placeholder, color = palette.tertiaryText, fontSize = 15.sp)
-        },
-        leadingIcon = {
-            Icon(
-                imageVector = GalleryIcons.Search,
-                contentDescription = null,
-                tint = palette.tertiaryText,
-                modifier = Modifier.size(17.dp)
-            )
-        },
-        trailingIcon = {
-            if (value.isNotEmpty()) {
+    GlassPanel(
+        modifier = modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(18.dp),
+        elevation = 12.dp,
+        contentPadding = PaddingValues(horizontal = 4.dp)
+    ) {
+        TextField(
+            value = value,
+            onValueChange = onValueChange,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp),
+            placeholder = {
+                Text(placeholder, color = palette.tertiaryText, fontSize = 15.sp)
+            },
+            leadingIcon = {
                 Icon(
-                    imageVector = GalleryIcons.Close,
-                    contentDescription = "Clear",
+                    imageVector = GalleryIcons.Search,
+                    contentDescription = null,
                     tint = palette.tertiaryText,
-                    modifier = Modifier
-                        .size(15.dp)
-                        .combinedClickable(onClick = { onValueChange("") })
+                    modifier = Modifier.size(17.dp)
                 )
-            }
-        },
-        singleLine = true,
-        textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
-        keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
-        keyboardActions = KeyboardActions(onSearch = { onSearch() }),
-        shape = RoundedCornerShape(11.dp),
-        colors = TextFieldDefaults.colors(
-            focusedContainerColor = if (palette.isDark) Color(0xFF1C1C1E) else Color(0xFFEFEFF2),
-            unfocusedContainerColor = if (palette.isDark) Color(0xFF1C1C1E) else Color(0xFFEFEFF2),
-            focusedIndicatorColor = Color.Transparent,
-            unfocusedIndicatorColor = Color.Transparent,
-            disabledIndicatorColor = Color.Transparent,
-            cursorColor = palette.accent,
-            focusedTextColor = palette.primaryText,
-            unfocusedTextColor = palette.primaryText
+            },
+            trailingIcon = {
+                if (value.isNotEmpty()) {
+                    Icon(
+                        imageVector = GalleryIcons.Close,
+                        contentDescription = "Clear",
+                        tint = palette.tertiaryText,
+                        modifier = Modifier
+                            .size(15.dp)
+                            .glassClickable(pressedScale = 0.85f, onClick = { onValueChange("") })
+                    )
+                }
+            },
+            singleLine = true,
+            textStyle = androidx.compose.ui.text.TextStyle(fontSize = 15.sp),
+            keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
+            keyboardActions = KeyboardActions(onSearch = { onSearch() }),
+            colors = TextFieldDefaults.colors(
+                focusedContainerColor = Color.Transparent,
+                unfocusedContainerColor = Color.Transparent,
+                focusedIndicatorColor = Color.Transparent,
+                unfocusedIndicatorColor = Color.Transparent,
+                disabledIndicatorColor = Color.Transparent,
+                cursorColor = palette.accent,
+                focusedTextColor = palette.primaryText,
+                unfocusedTextColor = palette.primaryText
+            )
         )
-    )
+    }
 }
 
 // ---------------------------------------------------------------- action sheet
@@ -634,84 +738,101 @@ fun GalleryActionSheet(
 ) {
     if (!visible) return
     val palette = GalleryTheme.palette
+    val glass = GalleryTheme.glass
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = if (palette.isDark) Color(0xFF1C1C1E) else Color(0xFFF7F7FA),
-        scrimColor = palette.scrim,
-        shape = RoundedCornerShape(topStart = 26.dp, topEnd = 26.dp),
-        dragHandle = {
-            Box(
-                modifier = Modifier
-                    .padding(top = 10.dp, bottom = 4.dp)
-                    .width(36.dp)
-                    .height(4.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(palette.tertiaryText.copy(alpha = 0.5f))
-            )
-        }
+        containerColor = Color.Transparent,
+        scrimColor = palette.scrim.copy(alpha = 0.45f),
+        shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+        dragHandle = null
     ) {
-        Column(modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)) {
-            if (title != null) {
-                Text(
-                    text = title,
-                    color = palette.secondaryText,
-                    fontSize = 13.sp,
-                    modifier = Modifier.padding(start = 24.dp, end = 24.dp, top = 4.dp, bottom = 10.dp)
-                )
-            }
-            actions.forEach { action ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .combinedClickable {
-                            onDismiss()
-                            action.onClick()
-                        }
-                        .padding(horizontal = 24.dp, vertical = 14.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        imageVector = action.icon,
-                        contentDescription = null,
-                        tint = if (action.destructive) Color(0xFFFF3B30) else palette.primaryText,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(Modifier.width(16.dp))
-                    Text(
-                        text = action.label,
-                        color = if (action.destructive) Color(0xFFFF3B30) else palette.primaryText,
-                        fontSize = 16.sp
-                    )
-                }
-            }
-            Spacer(Modifier.height(6.dp))
-            Surface(
-                color = palette.card,
-                shape = RoundedCornerShape(16.dp),
+        GlassPanel(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(topStart = 32.dp, topEnd = 32.dp),
+            elevation = 0.dp
+        ) {
+            Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp)
-                    .combinedClickable(onClick = onDismiss)
+                    .padding(bottom = 12.dp)
             ) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().padding(vertical = 14.dp),
+                    modifier = Modifier
+                        .padding(top = 10.dp, bottom = 8.dp)
+                        .align(Alignment.CenterHorizontally)
+                        .width(38.dp)
+                        .height(4.dp)
+                        .clip(RoundedCornerShape(2.dp))
+                        .background(glass.highlight.copy(alpha = 0.45f))
+                )
+                if (title != null) {
+                    Text(
+                        text = title,
+                        color = palette.secondaryText,
+                        fontSize = 12.sp,
+                        maxLines = 2,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.padding(
+                            start = 24.dp, end = 24.dp, top = 4.dp, bottom = 10.dp
+                        )
+                    )
+                }
+                actions.forEach { action ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .glassClickable(pressedScale = 0.98f, onClick = {
+                                onDismiss()
+                                action.onClick()
+                            })
+                            .padding(horizontal = 24.dp, vertical = 14.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = action.icon,
+                            contentDescription = null,
+                            tint = if (action.destructive) Color(0xFFFF3B30) else palette.primaryText,
+                            modifier = Modifier.size(19.dp)
+                        )
+                        Spacer(Modifier.width(16.dp))
+                        Text(
+                            text = action.label,
+                            color = if (action.destructive) Color(0xFFFF3B30) else palette.primaryText,
+                            fontSize = 15.5.sp
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp)
+                        .clip(RoundedCornerShape(18.dp))
+                        .background(palette.accentSoft)
+                        .border(
+                            0.8.dp,
+                            Color.White.copy(alpha = 0.35f),
+                            RoundedCornerShape(18.dp)
+                        )
+                        .glassClickable(pressedScale = 0.97f, onClick = onDismiss)
+                        .padding(vertical = 14.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Cancel",
                         color = palette.accent,
-                        fontSize = 16.sp,
+                        fontSize = 15.5.sp,
                         fontWeight = FontWeight.SemiBold
                     )
                 }
+                Spacer(
+                    Modifier
+                        .height(10.dp)
+                        .windowInsetsPadding(WindowInsets.navigationBars)
+                )
             }
-            Spacer(
-                Modifier
-                    .height(8.dp)
-                    .windowInsetsPadding(WindowInsets.navigationBars)
-            )
         }
     }
 }
@@ -728,13 +849,13 @@ fun InfoRow(label: String, value: String, mono: Boolean = false) {
         Text(
             text = label,
             color = palette.secondaryText,
-            fontSize = 13.sp,
+            fontSize = 12.5.sp,
             modifier = Modifier.width(104.dp)
         )
         Text(
             text = value,
             color = palette.primaryText,
-            fontSize = 13.sp,
+            fontSize = 12.5.sp,
             modifier = Modifier.weight(1f),
             fontFamily = if (mono) androidx.compose.ui.text.font.FontFamily.Monospace else null
         )
